@@ -1,0 +1,2846 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PneumoScan Local</title>
+  <script>
+    (() => {
+      const script = document.createElement("script");
+      script.defer = true;
+      script.src = window.location.protocol === "file:" ? "amharic_translate.js" : "/static/amharic_translate.js";
+      document.head.appendChild(script);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6fafc;
+      --surface: #ffffff;
+      --surface-2: #f0f8f5;
+      --ink: #12211e;
+      --muted: #60736f;
+      --line: #dce9e6;
+      --teal: #0caa8a;
+      --blue: #2f79d6;
+      --orange: #d97706;
+      --red: #c24132;
+      --green: #16805d;
+      --shadow: 0 22px 65px rgba(23, 63, 58, 0.13);
+      --focus: 0 0 0 4px rgba(12, 170, 138, .14);
+    }
+
+    body.dark {
+      color-scheme: dark;
+      --bg: #071111;
+      --surface: #101b1b;
+      --surface-2: #142525;
+      --ink: #eef8f6;
+      --muted: #9fb4ae;
+      --line: #253a39;
+      --shadow: 0 22px 65px rgba(0, 0, 0, 0.36);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(12, 170, 138, .14), transparent 30%),
+        radial-gradient(circle at 100% 0%, rgba(47, 121, 214, .12), transparent 30%),
+        var(--bg);
+    }
+
+    .theme-wipe {
+      position: fixed;
+      left: var(--wipe-x, 50%);
+      top: var(--wipe-y, 50%);
+      z-index: 9999;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, rgba(5, 10, 11, .42) 0 18%, rgba(5, 10, 11, .22) 38%, rgba(12, 170, 138, .08) 58%, transparent 74%);
+      box-shadow: 0 0 0 6px rgba(12, 170, 138, .08), 0 16px 42px rgba(0, 0, 0, .16);
+      filter: blur(.2px);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, -50%) scale(.1);
+      transform-origin: center;
+    }
+
+    .theme-wipe.to-light {
+      background:
+        radial-gradient(circle, rgba(246, 250, 252, .48) 0 18%, rgba(246, 250, 252, .24) 38%, rgba(47, 121, 214, .08) 58%, transparent 74%);
+      box-shadow: 0 0 0 6px rgba(47, 121, 214, .08), 0 16px 42px rgba(47, 121, 214, .14);
+    }
+
+    .theme-wipe.run {
+      animation: themeWipe .52s cubic-bezier(.22, .72, .24, 1) forwards;
+    }
+
+    @keyframes themeWipe {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(.12);
+      }
+      18% {
+        opacity: .72;
+      }
+      62% {
+        opacity: .34;
+        transform: translate(-50%, -50%) scale(115);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(122);
+      }
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button,
+    input,
+    select,
+    textarea,
+    a {
+      transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background .18s ease;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    a:focus-visible {
+      outline: none;
+      box-shadow: var(--focus);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .auth-screen {
+      width: min(1120px, calc(100% - 28px));
+      min-height: 100vh;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr .82fr;
+      gap: 18px;
+      align-items: center;
+      padding: 28px 0;
+    }
+
+    .auth-hero,
+    .auth-card,
+    .panel,
+    .sidebar {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      box-shadow: var(--shadow);
+    }
+
+    .auth-hero {
+      min-height: 560px;
+      display: grid;
+      align-content: center;
+      padding: 38px;
+      overflow: hidden;
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, transparent), color-mix(in srgb, var(--surface-2) 86%, transparent)),
+        repeating-linear-gradient(135deg, transparent 0 12px, rgba(12, 170, 138, .05) 12px 24px);
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .mark {
+      display: grid;
+      place-items: center;
+      width: 46px;
+      height: 46px;
+      border-radius: 8px;
+      color: white;
+      background: linear-gradient(135deg, var(--teal), var(--blue));
+      font-weight: 950;
+      box-shadow: 0 14px 32px rgba(12, 170, 138, .28);
+    }
+
+    .brand-row h1 {
+      margin: 0 0 3px;
+      font-size: 1.12rem;
+    }
+
+    .brand-row p {
+      margin: 0;
+      color: var(--muted);
+      font-size: .86rem;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      width: fit-content;
+      margin-bottom: 18px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      color: #08715f;
+      background: #e7f7f1;
+      font-size: .76rem;
+      font-weight: 950;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    body.dark .eyebrow {
+      color: #9ef5dc;
+      background: #12312c;
+    }
+
+    .auth-hero h2 {
+      max-width: 780px;
+      margin: 0 0 16px;
+      font-size: clamp(2.2rem, 4.6vw, 4.5rem);
+      line-height: .96;
+      letter-spacing: 0;
+    }
+
+    .auth-hero p {
+      max-width: 680px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.68;
+      font-size: 1.02rem;
+    }
+
+    .auth-card {
+      padding: 24px;
+    }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+    }
+
+    .tab {
+      border: 0;
+      border-radius: 6px;
+      padding: 11px;
+      color: var(--muted);
+      background: transparent;
+      font-weight: 900;
+    }
+
+    .tab.active {
+      color: white;
+      background: linear-gradient(135deg, var(--teal), var(--blue));
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+      margin-bottom: 11px;
+      color: var(--muted);
+      font-size: .84rem;
+      font-weight: 850;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--ink);
+      background: var(--surface);
+      outline: none;
+    }
+
+    textarea {
+      min-height: 82px;
+      resize: vertical;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--teal);
+      box-shadow: var(--focus);
+    }
+
+    .btn {
+      min-height: 46px;
+      border: 0;
+      border-radius: 8px;
+      padding: 0 16px;
+      color: white;
+      background: linear-gradient(135deg, var(--teal), var(--blue));
+      font-weight: 900;
+      box-shadow: 0 14px 30px rgba(12, 170, 138, .22);
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 36px rgba(12, 170, 138, .26);
+    }
+
+    .btn.secondary {
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: var(--surface);
+      box-shadow: none;
+    }
+
+    .btn.secondary:hover:not(:disabled) {
+      color: var(--ink);
+      border-color: color-mix(in srgb, var(--teal) 45%, var(--line));
+      background: color-mix(in srgb, var(--surface-2) 70%, var(--surface));
+      box-shadow: none;
+    }
+
+    .btn.full {
+      width: 100%;
+    }
+
+    .btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 292px 1fr;
+      gap: 18px;
+      width: min(1360px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 18px 0;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 18px;
+      height: calc(100vh - 36px);
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      gap: 16px;
+      padding: 18px;
+      overflow: auto;
+    }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-2);
+    }
+
+    .avatar {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      color: white;
+      background: linear-gradient(135deg, var(--teal), var(--blue));
+      font-weight: 950;
+    }
+
+    .user-card strong {
+      display: block;
+    }
+
+    .user-card span {
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .side-nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .side-nav button {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      color: var(--muted);
+      background: var(--surface);
+      font-weight: 850;
+      text-align: left;
+    }
+
+    .side-nav button.active {
+      color: white;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--teal), var(--blue));
+    }
+
+    .side-nav button:hover:not(.active) {
+      color: var(--ink);
+      border-color: color-mix(in srgb, var(--teal) 40%, var(--line));
+      transform: translateX(2px);
+    }
+
+    .mini-stats {
+      display: grid;
+      gap: 8px;
+    }
+
+    .mini-stat {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    .mini-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 950;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .mini-stat strong {
+      display: block;
+      margin-top: 7px;
+      font-size: 1.36rem;
+      line-height: 1;
+    }
+
+    .sidebar-actions {
+      display: grid;
+      gap: 8px;
+    }
+
+    .role-pill,
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      min-height: 26px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0 10px;
+      color: var(--muted);
+      background: var(--surface);
+      font-size: .74rem;
+      font-weight: 950;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .content {
+      display: grid;
+      gap: 18px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface) 94%, transparent);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+    }
+
+    .topbar h2 {
+      margin: 0 0 4px;
+      font-size: 1.16rem;
+    }
+
+    .topbar p {
+      margin: 0;
+      color: var(--muted);
+      font-size: .88rem;
+    }
+
+    .mode-toggle {
+      min-width: 120px;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--surface);
+      font-weight: 900;
+    }
+
+    .panel {
+      padding: 22px;
+    }
+
+    .panel h3 {
+      margin: 0 0 12px;
+    }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-end;
+      margin: 18px 0 10px;
+    }
+
+    .section-heading h3 {
+      margin: 0;
+    }
+
+    .section-heading p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.45;
+    }
+
+    .hero-panel {
+      display: grid;
+      grid-template-columns: 1fr .88fr;
+      gap: 14px;
+    }
+
+    .home-hero {
+      position: relative;
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+      gap: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 26px;
+      background:
+        linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, transparent), color-mix(in srgb, var(--surface-2) 88%, transparent)),
+        radial-gradient(circle at 82% 18%, rgba(47, 121, 214, .18), transparent 34%),
+        radial-gradient(circle at 16% 20%, rgba(12, 170, 138, .2), transparent 28%);
+      box-shadow: var(--shadow);
+    }
+
+    .home-hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, .38) 46%, transparent 62%);
+      transform: translateX(-100%);
+      animation: heroSweep 6s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    body.dark .home-hero::before {
+      background: linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, .08) 50%, transparent 62%);
+    }
+
+    .home-hero > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-copy {
+      display: grid;
+      align-content: center;
+      gap: 14px;
+    }
+
+    .hero-kicker {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 30px;
+      width: fit-content;
+      border: 1px solid rgba(12, 170, 138, .28);
+      border-radius: 999px;
+      padding: 0 11px;
+      color: var(--green);
+      background: color-mix(in srgb, var(--surface-2) 82%, var(--surface));
+      font-size: .74rem;
+      font-weight: 950;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--teal);
+      box-shadow: 0 0 0 6px rgba(12, 170, 138, .14);
+      animation: softPulse 1s ease-in-out infinite;
+    }
+
+    .hero-visual {
+      display: grid;
+      gap: 12px;
+    }
+
+    .care-console {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: color-mix(in srgb, var(--surface) 86%, transparent);
+      box-shadow: 0 18px 45px rgba(23, 63, 58, .1);
+    }
+
+    .console-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .console-lines {
+      display: grid;
+      gap: 9px;
+    }
+
+    .console-line {
+      display: grid;
+      grid-template-columns: 98px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: .82rem;
+      font-weight: 850;
+    }
+
+    .console-track {
+      height: 10px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--line) 70%, transparent);
+    }
+
+    .console-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--teal), var(--blue));
+      animation: barGlow 3s ease-in-out infinite;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .feature-card {
+      position: relative;
+      overflow: hidden;
+      min-height: 152px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 15px;
+      background: var(--surface);
+      box-shadow: 0 12px 32px rgba(23, 63, 58, .08);
+      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(12, 170, 138, .45);
+      box-shadow: 0 20px 45px rgba(23, 63, 58, .12);
+    }
+
+    .feature-card::after {
+      content: "";
+      position: absolute;
+      left: 15px;
+      right: 15px;
+      bottom: 0;
+      height: 3px;
+      border-radius: 999px 999px 0 0;
+      background: linear-gradient(90deg, var(--teal), var(--blue));
+    }
+
+    .feature-card h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .feature-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: .88rem;
+    }
+
+    .feature-icon {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      color: white;
+      background: linear-gradient(135deg, var(--teal), var(--blue));
+      font-size: .82rem;
+      font-weight: 950;
+      margin-bottom: 12px;
+    }
+
+    .trust-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .trust-item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: color-mix(in srgb, var(--surface-2) 68%, var(--surface));
+    }
+
+    .trust-item strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .trust-item span {
+      color: var(--muted);
+      font-size: .86rem;
+      line-height: 1.45;
+    }
+
+    @keyframes heroSweep {
+      0%, 42% {
+        transform: translateX(-100%);
+      }
+      54% {
+        transform: translateX(100%);
+      }
+      100% {
+        transform: translateX(100%);
+      }
+    }
+
+    @keyframes softPulse {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(.82);
+        opacity: .78;
+      }
+    }
+
+    @keyframes barGlow {
+      0%, 100% {
+        filter: saturate(1);
+      }
+      50% {
+        filter: saturate(1.4) brightness(1.08);
+      }
+    }
+
+    .big-title {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 4vw, 3.7rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .muted {
+      color: var(--muted);
+      line-height: 1.62;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--surface);
+      min-width: 0;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: .73rem;
+      font-weight: 950;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 7px;
+      font-size: 1.55rem;
+      line-height: 1;
+    }
+
+    .analyzer-grid {
+      display: grid;
+      grid-template-columns: .92fr 1.08fr;
+      gap: 14px;
+    }
+
+    .upload-box {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 190px;
+      border: 2px dashed #a7d7cc;
+      border-radius: 8px;
+      background: var(--surface-2);
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+
+    .upload-box:hover {
+      border-color: color-mix(in srgb, var(--teal) 58%, #a7d7cc);
+      background: color-mix(in srgb, var(--surface-2) 80%, var(--surface));
+    }
+
+    .upload-box input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .preview {
+      display: none;
+      width: 100%;
+      max-height: 420px;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      filter: grayscale(1);
+      margin-bottom: 12px;
+    }
+
+    .preview.show {
+      display: block;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .result {
+      display: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background: linear-gradient(180deg, var(--surface), var(--surface-2));
+      margin-top: 14px;
+    }
+
+    .result.show {
+      display: block;
+    }
+
+    .verdict {
+      margin: 0 0 8px;
+      font-size: clamp(1.55rem, 3vw, 2.6rem);
+      line-height: 1;
+      font-weight: 950;
+    }
+
+    .verdict.high {
+      color: var(--red);
+    }
+
+    .verdict.medium {
+      color: var(--orange);
+    }
+
+    .verdict.low {
+      color: var(--green);
+    }
+
+    .bar {
+      height: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--line) 70%, transparent);
+      margin: 12px 0;
+    }
+
+    .fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--orange), var(--red));
+      transition: width .6s ease;
+    }
+
+    .care-grid,
+    .two-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .care-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: var(--surface);
+    }
+
+    .care-card.urgent {
+      border-color: rgba(194, 65, 50, .26);
+      background: color-mix(in srgb, #fff5f3 72%, var(--surface));
+    }
+
+    body.dark .care-card.urgent {
+      background: #281716;
+    }
+
+    .care-card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: .9rem;
+    }
+
+    .chart {
+      display: grid;
+      gap: 9px;
+      margin-top: 14px;
+    }
+
+    .chart-row {
+      display: grid;
+      grid-template-columns: 92px 1fr 44px;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: .84rem;
+    }
+
+    .chart-track {
+      height: 12px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--line) 70%, transparent);
+      overflow: hidden;
+    }
+
+    .chart-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--teal), var(--blue));
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .scan-item,
+    .checkin-item,
+    .appointment-item,
+    .patient-card,
+    .message-bubble {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--surface);
+    }
+
+    .appointment-item,
+    .checkin-item,
+    .patient-card {
+      transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .appointment-item:hover,
+    .checkin-item:hover,
+    .patient-card:hover {
+      transform: translateY(-2px);
+      border-color: color-mix(in srgb, var(--teal) 38%, var(--line));
+      box-shadow: 0 14px 28px rgba(23, 63, 58, .08);
+    }
+
+    .empty-state {
+      border: 1px dashed color-mix(in srgb, var(--line) 78%, var(--muted));
+      border-radius: 8px;
+      padding: 16px;
+      color: var(--muted);
+      background: color-mix(in srgb, var(--surface-2) 62%, var(--surface));
+      line-height: 1.5;
+      font-size: .9rem;
+    }
+
+    .scan-item strong,
+    .checkin-item strong,
+    .appointment-item strong,
+    .patient-card strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .scan-item span,
+    .checkin-item span,
+    .appointment-item span,
+    .patient-card span {
+      color: var(--muted);
+      font-size: .88rem;
+      line-height: 1.45;
+    }
+
+    .admin-board {
+      display: grid;
+      grid-template-columns: minmax(250px, .66fr) minmax(0, 1.72fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .doctor-workspace {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background:
+        radial-gradient(circle at 12% 0%, rgba(12, 170, 138, .13), transparent 28%),
+        linear-gradient(180deg, var(--surface), var(--surface-2));
+      box-shadow: 0 20px 52px rgba(0, 42, 36, .08);
+      margin-top: 14px;
+    }
+
+    .doctor-workspace-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .doctor-workspace-head h3 {
+      margin: 0 0 6px;
+      font-size: clamp(1.2rem, 2vw, 1.65rem);
+    }
+
+    .admin-scan-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, .72fr) minmax(440px, 1.28fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .scan-tools-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .scan-control-panel,
+    .scan-result-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      padding: 16px;
+    }
+
+    .scan-upload {
+      min-height: 250px;
+      margin-bottom: 0;
+    }
+
+    .scan-preview-frame {
+      display: grid;
+      min-height: 380px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(45deg, rgba(12, 170, 138, .035) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(12, 170, 138, .035) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(47, 121, 214, .035) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(47, 121, 214, .035) 75%),
+        var(--surface);
+      background-size: 22px 22px;
+      background-position: 0 0, 0 11px, 11px -11px, -11px 0;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .scan-preview-frame .empty-state {
+      margin: 0;
+      width: min(100% - 32px, 520px);
+    }
+
+    .admin-xray-preview {
+      max-height: 520px;
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .admin-page-hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(12, 170, 138, .18), transparent 34%),
+        radial-gradient(circle at 100% 12%, rgba(47, 121, 214, .14), transparent 34%),
+        linear-gradient(135deg, var(--surface), var(--surface-2));
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+    }
+
+    .admin-page-hero h3 {
+      margin: 0 0 6px;
+      font-size: clamp(1.45rem, 2.4vw, 2.25rem);
+    }
+
+    .admin-page-hero p {
+      max-width: 760px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .scan-system-shell {
+      display: grid;
+      gap: 14px;
+    }
+
+    .scan-summary-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .scan-system-shell .doctor-workspace {
+      margin-top: 0;
+    }
+
+    .scan-panel-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .scan-panel-title h3 {
+      margin: 0 0 4px;
+    }
+
+    .step-badge {
+      display: inline-grid;
+      place-items: center;
+      min-width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      color: white;
+      background: linear-gradient(135deg, var(--teal), var(--blue));
+      font-weight: 950;
+      box-shadow: 0 12px 26px rgba(12, 170, 138, .22);
+    }
+
+    .scan-mini-checklist {
+      display: grid;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .scan-mini-checklist span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.45;
+    }
+
+    .scan-mini-checklist span::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--teal);
+      box-shadow: 0 0 0 4px rgba(12, 170, 138, .12);
+      flex: 0 0 auto;
+    }
+
+    .scan-context-grid {
+      display: grid;
+      grid-template-columns: .82fr 1.18fr;
+      gap: 14px;
+    }
+
+    .blood-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background:
+        radial-gradient(circle at top left, rgba(12, 170, 138, .14), transparent 36%),
+        linear-gradient(180deg, var(--surface), var(--surface-2));
+      margin-top: 14px;
+    }
+
+    .blood-panel.locked {
+      background:
+        radial-gradient(circle at top left, rgba(217, 119, 6, .12), transparent 34%),
+        linear-gradient(180deg, var(--surface), var(--surface-2));
+    }
+
+    .blood-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, .88fr) 1.12fr;
+      gap: 14px;
+      align-items: start;
+      margin-top: 12px;
+    }
+
+    .blood-preview {
+      filter: none;
+      max-height: 260px;
+    }
+
+    .support-row {
+      display: grid;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .support-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: .8rem;
+      font-weight: 900;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .cell-prob-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .cell-chip {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--surface);
+    }
+
+    .cell-chip strong,
+    .cell-chip span {
+      display: block;
+    }
+
+    .cell-chip span {
+      color: var(--muted);
+      font-size: .8rem;
+      margin-top: 4px;
+    }
+
+    .patient-card {
+      display: grid;
+      gap: 10px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .patient-card.active {
+      border-color: rgba(12, 170, 138, .55);
+      box-shadow: 0 0 0 3px rgba(12, 170, 138, .12);
+    }
+
+    .patient-top,
+    .mail-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .patient-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .small-stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: var(--surface-2);
+    }
+
+    .small-stat span {
+      display: block;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .small-stat strong {
+      display: block;
+      margin-top: 5px;
+      font-size: 1.12rem;
+    }
+
+    .message-thread {
+      display: grid;
+      gap: 10px;
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .message-bubble {
+      width: min(88%, 620px);
+      line-height: 1.45;
+    }
+
+    .message-bubble.admin {
+      margin-left: auto;
+      border-color: rgba(47, 121, 214, .28);
+      background: color-mix(in srgb, var(--surface-2) 82%, var(--surface));
+    }
+
+    .message-bubble.user {
+      margin-right: auto;
+    }
+
+    .message-bubble span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: .78rem;
+    }
+
+    .mail-compose,
+    .appointment-form {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .doctor-actions {
+      display: grid;
+      gap: 8px;
+      margin: 12px 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .evidence-links {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .evidence-links a {
+      color: var(--blue);
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    .message {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: .9rem;
+      line-height: 1.45;
+      margin-top: 10px;
+    }
+
+    .message.error {
+      color: var(--red);
+      font-weight: 850;
+    }
+
+    .notice {
+      margin-top: 14px;
+      border: 1px solid rgba(217, 119, 6, .26);
+      border-radius: 8px;
+      color: #7a4f0a;
+      background: #fff8e8;
+      padding: 13px;
+      line-height: 1.55;
+      font-size: .9rem;
+    }
+
+    body.dark .notice {
+      color: #ffd28a;
+      background: #302313;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    @media (max-width: 1040px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+      }
+
+      .hero-panel,
+      .home-hero,
+      .analyzer-grid,
+      .admin-board,
+      .admin-scan-grid,
+      .blood-grid,
+      .scan-context-grid,
+      .auth-screen {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .metric-grid,
+      .feature-grid,
+      .trust-strip,
+      .patient-grid,
+      .two-grid,
+      .cell-prob-grid,
+      .scan-summary-strip,
+      .care-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .chart-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="theme-wipe" id="themeWipe" aria-hidden="true"></div>
+
+  <section class="auth-screen" id="authScreen">
+    <div class="auth-hero">
+      <div class="brand-row">
+        <div class="mark">PX</div>
+        <div>
+          <h1>PneumoScan Local</h1>
+          <p>Private care coordination portal</p>
+        </div>
+      </div>
+      <div class="eyebrow">Local backend</div>
+      <h2>Sign in for private care updates.</h2>
+      <p>
+        Your messages, appointments, and check-ins stay on this computer.
+        Chest X-ray scanning stays on the admin/doctor side.
+      </p>
+    </div>
+
+    <div class="auth-card">
+      <div class="tabs">
+        <button class="tab active" id="loginTab" type="button">Log in</button>
+        <button class="tab" id="signupTab" type="button">Sign up</button>
+      </div>
+
+      <div id="loginForm">
+        <label class="field">Username <input id="loginUser" autocomplete="username" /></label>
+        <label class="field">Password <input id="loginPass" type="password" autocomplete="current-password" /></label>
+        <button class="btn full" id="loginBtn" type="button">Log in and open dashboard</button>
+      </div>
+
+      <div class="hidden" id="signupForm">
+        <label class="field">Username <input id="signupUser" autocomplete="username" /></label>
+        <label class="field">Password <input id="signupPass" type="password" autocomplete="new-password" /></label>
+        <button class="btn full" id="signupBtn" type="button">Create account and open dashboard</button>
+      </div>
+
+      <div class="message" id="authMessage"></div>
+      <div class="notice">
+        This app is not a medical device. Pneumonia concerns should be reviewed by qualified clinicians.
+      </div>
+    </div>
+  </section>
+
+  <main class="app hidden" id="appShell">
+    <aside class="sidebar">
+      <div class="brand-row">
+        <div class="mark">PX</div>
+        <div>
+          <h1>PneumoScan</h1>
+          <p>Local account</p>
+        </div>
+      </div>
+
+      <div class="user-card">
+        <div class="avatar" id="avatar">U</div>
+        <div>
+          <strong id="usernameLabel">User</strong>
+          <span id="roleLabel">Signed in locally</span>
+        </div>
+      </div>
+
+      <nav class="side-nav" aria-label="Dashboard sections">
+        <button class="active user-only" data-view="homeView" type="button">Home <span>01</span></button>
+        <button class="user-only" data-view="checkinView" type="button">Check-ins <span>02</span></button>
+        <button class="user-only" data-view="mailView" type="button">Mail <span>03</span></button>
+        <button class="user-only" data-view="learnView" type="button">Learn <span>04</span></button>
+        <button class="admin-only hidden" data-view="adminView" type="button">Admin Hub <span>01</span></button>
+        <button class="admin-only hidden" data-view="adminChatView" type="button">Chats <span>02</span></button>
+        <button class="admin-only hidden" data-view="adminBookingsView" type="button">Booking Appointments <span>03</span></button>
+        <button class="admin-only hidden" data-view="adminScanView" type="button">Scan System <span>04</span></button>
+      </nav>
+
+      <div class="mini-stats">
+        <div class="mini-stat"><span id="sideStatOneLabel">Check-ins</span><strong id="sideScanCount">0</strong></div>
+        <div class="mini-stat"><span id="sideStatTwoLabel">Mail</span><strong id="sideHighCount">0</strong></div>
+        <div class="mini-stat"><span id="sideStatThreeLabel">Privacy</span><strong id="sideAvgScore">Admin</strong></div>
+      </div>
+
+      <div class="sidebar-actions">
+        <button class="btn secondary" id="darkToggle" type="button">Dark mode</button>
+        <button class="btn secondary" id="logoutBtn" type="button">Log out</button>
+      </div>
+    </aside>
+
+    <section class="content">
+      <header class="topbar">
+        <div>
+          <h2 id="pageTitle">Home</h2>
+          <p id="pageSubtitle">Welcome back. Your mail and check-ins are ready.</p>
+        </div>
+        <button class="mode-toggle" id="topDarkToggle" type="button">Toggle theme</button>
+      </header>
+
+      <section class="view active" id="homeView">
+        <div class="home-hero">
+          <div class="hero-copy">
+            <div class="hero-kicker">
+              <span class="status-chip"><span class="status-dot"></span> Local private portal</span>
+              <span class="status-chip">Admin-reviewed scans</span>
+            </div>
+            <div>
+              <h2 class="big-title">Your care updates, appointments, and messages in one clean place.</h2>
+              <p class="muted">
+                Scan details stay private on the admin side. You see only the appointments, notes,
+                and instructions the admin chooses to send through Mail.
+              </p>
+            </div>
+            <div class="button-row">
+              <button class="btn" data-jump="mailView" type="button">Open mail</button>
+              <button class="btn secondary" data-jump="checkinView" type="button">Add check-in</button>
+              <button class="btn secondary" data-jump="learnView" type="button">Learn safety</button>
+            </div>
+          </div>
+
+          <div class="hero-visual">
+            <div class="care-console">
+              <div class="console-top">
+                <strong>Live care panel</strong>
+                <span class="pill">Private</span>
+              </div>
+              <div class="console-lines">
+                <div class="console-line"><span>Mail</span><div class="console-track"><div class="console-fill" style="width:74%"></div></div><strong id="heroMailCount">0</strong></div>
+                <div class="console-line"><span>Check-ins</span><div class="console-track"><div class="console-fill" style="width:52%"></div></div><strong id="heroCheckinCount">0</strong></div>
+                <div class="console-line"><span>Privacy</span><div class="console-track"><div class="console-fill" style="width:100%"></div></div><strong>On</strong></div>
+              </div>
+            </div>
+            <div class="notice">
+              Chest X-ray scanning is admin/doctor-only. This portal is for private updates and tracking, not self-diagnosis.
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-grid" style="margin-top:14px;">
+          <div class="metric"><span>Appointments</span><strong id="appointmentCount">0</strong></div>
+          <div class="metric"><span>Mail items</span><strong id="mailCount">0</strong></div>
+          <div class="metric"><span>Check-ins</span><strong id="checkinCount">0</strong></div>
+          <div class="metric"><span>Scan privacy</span><strong>Admin</strong></div>
+        </div>
+
+        <div class="section-heading">
+          <div>
+            <h3>Portal Features</h3>
+            <p>Built for controlled communication between the admin dashboard and regular users.</p>
+          </div>
+        </div>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">01</div>
+            <h3>Admin-only scans</h3>
+            <p>X-ray analysis stays in the admin dashboard so users do not self-read model results.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">02</div>
+            <h3>Mail and bookings</h3>
+            <p>Appointments, notes, and doctor/admin messages appear in one simple inbox.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">03</div>
+            <h3>Daily check-ins</h3>
+            <p>Users can track symptoms and share useful context without seeing private scan labels.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">04</div>
+            <h3>Local storage</h3>
+            <p>Accounts, messages, scans, and check-ins stay on this computer through the local backend.</p>
+          </div>
+        </div>
+
+        <div class="section-heading">
+          <div>
+            <h3>Privacy Controls</h3>
+            <p>Patient-facing screens stay simple while admin-only clinical tools remain separated.</p>
+          </div>
+        </div>
+
+        <div class="trust-strip">
+          <div class="trust-item">
+            <strong>No self diagnosis</strong>
+            <span>The patient side avoids scan results and probabilities.</span>
+          </div>
+          <div class="trust-item">
+            <strong>Admin decides what to share</strong>
+            <span>Clinical notes are sent only through Mail or appointments.</span>
+          </div>
+          <div class="trust-item">
+            <strong>Cleaner workflow</strong>
+            <span>Check-ins, messages, and bookings are easy to scan at a glance.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="checkinView">
+        <div class="two-grid">
+          <div class="panel">
+            <h3>Daily check-in</h3>
+            <label class="field">Care file <select id="scanSelect"></select></label>
+            <label class="field">Temperature <input id="temperature" placeholder="Example: 38.1 C or 100.6 F" /></label>
+            <label class="field">Cough level 0-10 <input id="coughLevel" type="number" min="0" max="10" value="0" /></label>
+            <label class="field">Breathing difficulty 0-10 <input id="breathingLevel" type="number" min="0" max="10" value="0" /></label>
+            <label class="field">Oxygen level if measured <input id="oxygenLevel" placeholder="Example: 96%" /></label>
+            <label class="field">Fluids note <input id="fluidsNote" placeholder="Example: drank water regularly" /></label>
+            <label class="field">Food note <input id="foodNote" placeholder="Example: soup, fruit, small meals" /></label>
+            <label class="field">Notes <textarea id="notes" placeholder="Symptoms, medicines prescribed by clinician, follow-up reminders"></textarea></label>
+            <button class="btn" id="saveCheckinBtn" type="button">Save check-in</button>
+          </div>
+          <div class="panel">
+            <h3>Check-in history</h3>
+            <div class="list" id="checkinList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="mailView">
+        <div class="two-grid">
+          <div class="panel">
+            <div class="mail-top">
+              <div>
+                <h3>Mail from admin</h3>
+                <p class="muted">Appointments and messages from the admin account show up here.</p>
+              </div>
+              <button class="btn secondary" id="refreshMailBtn" type="button">Refresh</button>
+            </div>
+            <div class="list" id="appointmentList"></div>
+          </div>
+          <div class="panel">
+            <h3>Chat with admin</h3>
+            <div class="message-thread" id="mailThread"></div>
+            <div class="mail-compose">
+              <label class="field">Message <textarea id="userMessageInput" placeholder="Ask a question or reply to the admin"></textarea></label>
+              <button class="btn" id="sendUserMessageBtn" type="button">Send message</button>
+              <div class="message" id="mailMessage"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="learnView">
+        <div class="two-grid">
+          <div class="panel">
+            <h3>Prevention</h3>
+            <p class="muted">
+              Vaccination, hand hygiene, cleaner air, avoiding smoke, nutrition, and early care
+              can reduce pneumonia risk and severity.
+            </p>
+          </div>
+          <div class="panel">
+            <h3>About the AI</h3>
+            <p class="muted">
+              The local model uses chest X-ray image features and saves only local records.
+              It flags patterns for research and education; clinicians must make diagnoses.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="adminView">
+        <div class="metric-grid">
+          <div class="metric"><span>Patients</span><strong id="adminPatientCount">0</strong></div>
+          <div class="metric"><span>Total scans</span><strong id="adminScanCount">0</strong></div>
+          <div class="metric"><span>High pattern</span><strong id="adminHighCount">0</strong></div>
+          <div class="metric"><span>Messages</span><strong id="adminMessageCount">0</strong></div>
+        </div>
+
+        <div class="admin-board" style="margin-top:14px;">
+          <div class="panel">
+            <div class="mail-top">
+              <div>
+                <h3>Patients</h3>
+                <p class="muted">Open a patient, then use the admin pages for chat, booking, and scan tools.</p>
+              </div>
+              <button class="btn secondary" id="refreshAdminBtn" type="button">Refresh</button>
+            </div>
+            <div class="list" id="adminPatientsList"></div>
+          </div>
+
+          <div class="panel">
+            <div id="adminPatientDetail">
+              <h3>Pick a patient</h3>
+              <p class="muted">Patient overview and quick actions will appear here.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="adminChatView">
+        <div class="panel">
+          <div id="adminChatPage">
+            <h3>Pick a patient</h3>
+            <p class="muted">Open Admin Hub and choose a patient to start chatting.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="adminBookingsView">
+        <div class="panel">
+          <div id="adminBookingsPage">
+            <h3>Pick a patient</h3>
+            <p class="muted">Open Admin Hub and choose a patient to book appointments.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="adminScanView">
+        <div id="adminScanPage">
+          <div class="panel">
+            <h3>Pick a patient</h3>
+            <p class="muted">Open Admin Hub and choose a patient to run the scan system.</p>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const tokenKey = "pneumoscan_token";
+    const themeKey = "pneumoscan_theme";
+    let token = localStorage.getItem(tokenKey) || "";
+    let adminSelectedFile = null;
+    let adminSelectedBloodFile = null;
+    let currentUser = "";
+    let isAdmin = false;
+    let selectedPatientId = null;
+    let selectedPatientBloodTests = [];
+    let currentAdminScanResult = null;
+    let themeAnimating = false;
+
+    const authScreen = document.getElementById("authScreen");
+    const appShell = document.getElementById("appShell");
+    const authMessage = document.getElementById("authMessage");
+    const themeWipe = document.getElementById("themeWipe");
+    const usernameLabel = document.getElementById("usernameLabel");
+    const roleLabel = document.getElementById("roleLabel");
+    const avatar = document.getElementById("avatar");
+    const pageTitle = document.getElementById("pageTitle");
+    const pageSubtitle = document.getElementById("pageSubtitle");
+    const scanSelect = document.getElementById("scanSelect");
+    const mailMessage = document.getElementById("mailMessage");
+    const adminPatientDetail = document.getElementById("adminPatientDetail");
+
+    document.getElementById("loginTab").addEventListener("click", () => setAuthMode("login"));
+    document.getElementById("signupTab").addEventListener("click", () => setAuthMode("signup"));
+    document.getElementById("signupBtn").addEventListener("click", () => auth("signup"));
+    document.getElementById("loginBtn").addEventListener("click", () => auth("login"));
+    document.getElementById("logoutBtn").addEventListener("click", logout);
+    document.getElementById("saveCheckinBtn").addEventListener("click", saveCheckin);
+    document.getElementById("darkToggle").addEventListener("click", toggleTheme);
+    document.getElementById("topDarkToggle").addEventListener("click", toggleTheme);
+    document.getElementById("refreshMailBtn").addEventListener("click", refreshMail);
+    document.getElementById("sendUserMessageBtn").addEventListener("click", sendUserMessage);
+    document.getElementById("refreshAdminBtn").addEventListener("click", refreshAdmin);
+
+    document.querySelectorAll("[data-view]").forEach((button) => {
+      button.addEventListener("click", () => showView(button.dataset.view));
+    });
+
+    bindJumpButtons();
+
+    applyTheme(localStorage.getItem(themeKey) || "light");
+    boot();
+
+    async function boot() {
+      if (!token) {
+        showAuth();
+        return;
+      }
+      try {
+        const me = await api("/api/me");
+        showApp(me);
+        await refreshAll();
+      } catch {
+        localStorage.removeItem(tokenKey);
+        token = "";
+        showAuth();
+      }
+    }
+
+    function setAuthMode(mode) {
+      const isLogin = mode === "login";
+      document.getElementById("loginForm").classList.toggle("hidden", !isLogin);
+      document.getElementById("signupForm").classList.toggle("hidden", isLogin);
+      document.getElementById("loginTab").classList.toggle("active", isLogin);
+      document.getElementById("signupTab").classList.toggle("active", !isLogin);
+      authMessage.textContent = "";
+    }
+
+    function showAuth() {
+      isAdmin = false;
+      selectedPatientId = null;
+      authScreen.classList.remove("hidden");
+      appShell.classList.add("hidden");
+    }
+
+    function showApp(profile) {
+      currentUser = profile.username;
+      isAdmin = !!profile.is_admin;
+      authScreen.classList.add("hidden");
+      appShell.classList.remove("hidden");
+      usernameLabel.textContent = currentUser;
+      roleLabel.textContent = isAdmin ? "Admin control room" : "Signed in locally";
+      avatar.textContent = currentUser.slice(0, 1).toUpperCase();
+      document.querySelectorAll(".admin-only").forEach((item) => item.classList.toggle("hidden", !isAdmin));
+      document.querySelectorAll(".user-only").forEach((item) => item.classList.toggle("hidden", isAdmin));
+      localStorage.setItem("pneumoscan_signed_in", "true");
+      showView(isAdmin ? "adminView" : "homeView");
+    }
+
+    function showView(viewId) {
+      if (!document.getElementById(viewId)) {
+        viewId = isAdmin ? "adminView" : "homeView";
+      }
+      document.querySelectorAll(".view").forEach((view) => view.classList.remove("active"));
+      document.getElementById(viewId).classList.add("active");
+      document.querySelectorAll("[data-view]").forEach((button) => button.classList.toggle("active", button.dataset.view === viewId));
+
+      const titles = {
+        homeView: ["Home", `Welcome back${currentUser ? `, ${currentUser}` : ""}.`],
+        checkinView: ["Check-ins", "Track symptoms and care reminders."],
+        mailView: ["Mail", "Appointments and chat with the admin."],
+        learnView: ["Learn", "Pneumonia prevention and AI safety notes."],
+        adminView: ["Admin Hub", "Patients, metrics, and quick admin actions."],
+        adminChatView: ["Chats", "Message selected patients from a focused chat page."],
+        adminBookingsView: ["Booking Appointments", "Create and review appointments for the selected patient."],
+        adminScanView: ["Scan System", "Run admin-only X-ray and blood support scans."]
+      };
+      pageTitle.textContent = titles[viewId][0];
+      pageSubtitle.textContent = titles[viewId][1];
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function bindJumpButtons(root = document) {
+      root.querySelectorAll("[data-jump]").forEach((button) => {
+        if (button.dataset.jumpBound === "true") return;
+        button.dataset.jumpBound = "true";
+        button.addEventListener("click", () => showView(button.dataset.jump));
+      });
+    }
+
+    async function auth(mode) {
+      const username = document.getElementById(mode === "signup" ? "signupUser" : "loginUser").value.trim();
+      const password = document.getElementById(mode === "signup" ? "signupPass" : "loginPass").value;
+      authMessage.classList.remove("error");
+      authMessage.textContent = "Working...";
+      try {
+        const data = await api(`/api/${mode}`, {
+          method: "POST",
+          body: JSON.stringify({ username, password }),
+          headers: { "Content-Type": "application/json" },
+          auth: false
+        });
+        token = data.token;
+        localStorage.setItem(tokenKey, token);
+        showApp(data);
+        await refreshAll();
+      } catch (error) {
+        authMessage.textContent = cleanError(error);
+        authMessage.classList.add("error");
+      }
+    }
+
+    async function logout() {
+      try { await api("/api/logout", { method: "POST" }); } catch {}
+      token = "";
+      currentUser = "";
+      isAdmin = false;
+      selectedPatientId = null;
+      localStorage.removeItem(tokenKey);
+      localStorage.removeItem("pneumoscan_signed_in");
+      showAuth();
+    }
+
+    async function saveCheckin() {
+      const scanId = Number(scanSelect.value);
+      if (!scanId) {
+        alert("No private care file is available yet. Ask the admin to create one first.");
+        return;
+      }
+      try {
+        await api("/api/checkins", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            scan_id: scanId,
+            temperature: document.getElementById("temperature").value,
+            cough_level: Number(document.getElementById("coughLevel").value),
+            breathing_level: Number(document.getElementById("breathingLevel").value),
+            oxygen_level: document.getElementById("oxygenLevel").value,
+            fluids_note: document.getElementById("fluidsNote").value,
+            food_note: document.getElementById("foodNote").value,
+            notes: document.getElementById("notes").value
+          })
+        });
+        await refreshAll();
+      } catch (error) {
+        alert(cleanError(error));
+      }
+    }
+
+    async function refreshAll() {
+      if (isAdmin) {
+        await refreshAdmin();
+        return;
+      }
+      const [dashboard, scans, checkins] = await Promise.all([
+        api("/api/dashboard"),
+        api("/api/scans"),
+        api("/api/checkins")
+      ]);
+      renderDashboard(dashboard);
+      renderScans(scans);
+      renderCheckins(checkins);
+      await refreshMail();
+    }
+
+    function renderDashboard(data) {
+      document.getElementById("sideStatOneLabel").textContent = "Check-ins";
+      document.getElementById("sideStatTwoLabel").textContent = "Mail";
+      document.getElementById("sideStatThreeLabel").textContent = "Privacy";
+      document.getElementById("checkinCount").textContent = data.checkin_count;
+      document.getElementById("heroCheckinCount").textContent = data.checkin_count;
+      document.getElementById("sideScanCount").textContent = data.checkin_count;
+      document.getElementById("sideHighCount").textContent = document.getElementById("mailCount").textContent;
+      document.getElementById("sideAvgScore").textContent = "Admin";
+    }
+
+    function renderScans(scans) {
+      scanSelect.innerHTML = scans.length
+        ? scans.map((scan) => `<option value="${scan.id}">Private care file #${scan.id} - ${new Date(scan.created_at).toLocaleDateString()}</option>`).join("")
+        : "<option value=\"\">No private care file yet</option>";
+      const scanList = document.getElementById("scanList");
+      if (!scanList) return;
+      scanList.innerHTML = scans.length ? scans.map((scan) => `
+        <div class="scan-item">
+          <strong>Private care file #${scan.id}</strong>
+          <span>Details are hidden until admin sends them through Mail.</span>
+        </div>
+      `).join("") : "<div class=\"empty-state\">No private care files are available yet.</div>";
+    }
+
+    function renderCheckins(checkins) {
+      document.getElementById("checkinList").innerHTML = checkins.length ? checkins.map((item) => `
+        <div class="checkin-item">
+          <strong>Scan #${item.scan_id} - cough ${item.cough_level}/10, breathing ${item.breathing_level}/10</strong>
+          <span>Temp: ${escapeHtml(item.temperature || "-")} | O2: ${escapeHtml(item.oxygen_level || "-")}<br>${escapeHtml(item.notes || "")}<br>${new Date(item.created_at).toLocaleString()}</span>
+        </div>
+      `).join("") : "<div class=\"empty-state\">No check-ins yet. Add one when you have a private care file from the admin.</div>";
+    }
+
+    async function refreshMail() {
+      if (isAdmin || !token) return;
+      const mail = await api("/api/mail");
+      renderMail(mail);
+    }
+
+    function renderMail(mail) {
+      document.getElementById("appointmentCount").textContent = mail.appointments.length;
+      document.getElementById("mailCount").textContent = mail.messages.length;
+      document.getElementById("heroMailCount").textContent = mail.messages.length;
+      document.getElementById("sideHighCount").textContent = mail.messages.length;
+      document.getElementById("appointmentList").innerHTML = mail.appointments.length ? mail.appointments.map((item) => `
+        <div class="appointment-item">
+          <strong>${escapeHtml(item.title)}</strong>
+          <span>${escapeHtml(item.appointment_at)}<br>${escapeHtml(item.notes || "No extra notes.")}<br>Status: ${escapeHtml(item.status)} - ${new Date(item.created_at).toLocaleString()}</span>
+        </div>
+      `).join("") : "<div class=\"empty-state\">No appointments booked yet. New bookings from the admin will appear here.</div>";
+      renderThread("mailThread", mail.messages);
+    }
+
+    async function sendUserMessage() {
+      const input = document.getElementById("userMessageInput");
+      const body = input.value.trim();
+      if (!body) return;
+      mailMessage.classList.remove("error");
+      mailMessage.textContent = "Sending...";
+      try {
+        await api("/api/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ body })
+        });
+        input.value = "";
+        mailMessage.textContent = "Sent.";
+        await refreshMail();
+      } catch (error) {
+        mailMessage.textContent = cleanError(error);
+        mailMessage.classList.add("error");
+      }
+    }
+
+    async function refreshAdmin() {
+      if (!isAdmin || !token) return;
+      const overview = await api("/api/admin/overview");
+      renderAdminOverview(overview);
+      if (!selectedPatientId && overview.users.length) {
+        await selectPatient(overview.users[0].id);
+      } else if (selectedPatientId) {
+        await selectPatient(selectedPatientId, true);
+      }
+    }
+
+    function renderAdminOverview(data) {
+      document.getElementById("sideStatOneLabel").textContent = "Patients";
+      document.getElementById("sideStatTwoLabel").textContent = "High pattern";
+      document.getElementById("sideStatThreeLabel").textContent = "Messages";
+      document.getElementById("adminPatientCount").textContent = data.stats.patient_count;
+      document.getElementById("adminScanCount").textContent = data.stats.scan_count;
+      document.getElementById("adminHighCount").textContent = data.stats.high_pattern_count;
+      document.getElementById("adminMessageCount").textContent = data.stats.message_count;
+      document.getElementById("sideScanCount").textContent = data.stats.patient_count;
+      document.getElementById("sideHighCount").textContent = data.stats.high_pattern_count;
+      document.getElementById("sideAvgScore").textContent = data.stats.message_count;
+
+      const list = document.getElementById("adminPatientsList");
+      list.innerHTML = data.users.length ? data.users.map((user) => `
+        <button class="patient-card ${selectedPatientId === user.id ? "active" : ""}" data-patient-id="${user.id}" type="button">
+          <div class="patient-top">
+            <strong>${escapeHtml(user.username)}</strong>
+            <span class="pill">${user.active_sessions ? "online" : "offline"}</span>
+          </div>
+          <span>${escapeHtml(user.condition)}<br>${user.scan_count} scans - ${user.blood_count || 0} blood checks - ${user.appointment_count} appointments - ${user.message_count} messages</span>
+        </button>
+      `).join("") : "<div class=\"empty-state\">No regular users have signed up yet.</div>";
+
+      document.querySelectorAll("[data-patient-id]").forEach((button) => {
+        button.addEventListener("click", () => selectPatient(Number(button.dataset.patientId)));
+      });
+    }
+
+    async function selectPatient(userId, keepQuiet = false) {
+      selectedPatientId = userId;
+      if (!keepQuiet) {
+        adminPatientDetail.innerHTML = "<div class=\"empty-state\">Loading patient record...</div>";
+      }
+      const data = await api(`/api/admin/patient/${userId}`);
+      renderAdminPatient(data);
+      document.querySelectorAll("[data-patient-id]").forEach((button) => {
+        button.classList.toggle("active", Number(button.dataset.patientId) === userId);
+      });
+    }
+
+    function renderAdminPatient(data) {
+      adminSelectedFile = null;
+      adminSelectedBloodFile = null;
+      const patient = data.patient;
+      const latestScan = data.scans[0];
+      const latestCheckin = data.checkins[0];
+      const latestBlood = data.blood_tests[0];
+      selectedPatientBloodTests = data.blood_tests || [];
+      currentAdminScanResult = null;
+
+      const patientHeader = `
+        <div class="patient-top">
+          <div>
+            <h3>${escapeHtml(patient.username)}</h3>
+            <p class="muted">Signed up ${new Date(patient.created_at).toLocaleString()}</p>
+          </div>
+          <span class="role-pill">Patient #${patient.id}</span>
+        </div>
+      `;
+      const patientStats = `
+        <div class="patient-grid">
+          <div class="small-stat"><span>Latest condition</span><strong>${escapeHtml(latestScan ? latestScan.result_label : "No scan")}</strong></div>
+          <div class="small-stat"><span>Latest score</span><strong>${latestScan ? `${Math.round(latestScan.probability * 100)}%` : "0%"}</strong></div>
+          <div class="small-stat"><span>Check-ins</span><strong>${data.checkins.length}</strong></div>
+          <div class="small-stat"><span>Blood clue</span><strong>${escapeHtml(latestBlood ? latestBlood.result_label : "No blood check")}</strong></div>
+        </div>
+      `;
+      const latestCheckinHtml = latestCheckin ? `
+        <div class="checkin-item">
+          <strong>Scan #${latestCheckin.scan_id} - cough ${latestCheckin.cough_level}/10, breathing ${latestCheckin.breathing_level}/10</strong>
+          <span>Temp: ${escapeHtml(latestCheckin.temperature || "-")} | O2: ${escapeHtml(latestCheckin.oxygen_level || "-")}<br>${escapeHtml(latestCheckin.notes || "")}<br>${new Date(latestCheckin.created_at).toLocaleString()}</span>
+        </div>
+      ` : "<div class=\"empty-state\">No check-ins have been submitted for this patient yet.</div>";
+      const recentScansHtml = data.scans.length ? data.scans.slice(0, 4).map((scan) => `
+        <div class="scan-item">
+          <strong>#${scan.id} - ${escapeHtml(scan.result_label)}</strong>
+          <span>${Math.round(scan.probability * 100)}% - ${new Date(scan.created_at).toLocaleString()}</span>
+        </div>
+      `).join("") : "<div class=\"empty-state\">No admin scans have been saved for this patient yet.</div>";
+      const appointmentsHtml = data.appointments.length ? data.appointments.map((item) => `
+        <div class="appointment-item">
+          <strong>${escapeHtml(item.title)}</strong>
+          <span>${escapeHtml(item.appointment_at)}<br>${escapeHtml(item.notes || "")}<br>Status: ${escapeHtml(item.status)}</span>
+        </div>
+      `).join("") : "<div class=\"empty-state\">No appointments have been booked yet.</div>";
+
+      adminPatientDetail.innerHTML = `
+        ${patientHeader}
+        ${patientStats}
+
+        <div class="notice">
+          <strong>Admin Hub:</strong> this page is only the patient overview. Use the separate pages for scan system, booking appointments, and chats.
+        </div>
+
+        <div class="button-row" style="margin-top:14px;">
+          <button class="btn" data-jump="adminScanView" type="button">Open scan system</button>
+          <button class="btn secondary" data-jump="adminBookingsView" type="button">Book appointment</button>
+          <button class="btn secondary" data-jump="adminChatView" type="button">Open chat</button>
+        </div>
+
+        <div class="two-grid" style="margin-top:14px;">
+          <div>
+            <h3>Latest check-in</h3>
+            ${latestCheckinHtml}
+          </div>
+          <div>
+            <h3>Recent scans</h3>
+            <div class="list">${recentScansHtml}</div>
+          </div>
+        </div>
+      `;
+
+      const adminScanPage = document.getElementById("adminScanPage");
+      adminScanPage.innerHTML = `
+        <div class="scan-system-shell">
+          <div class="admin-page-hero">
+            <div class="patient-top">
+              <div>
+                <h3>Scan System</h3>
+                <p>Selected patient: <strong>${escapeHtml(patient.username)}</strong>. Run the X-ray review first; the blood support scan only unlocks after pneumonia-like findings.</p>
+              </div>
+              <span class="role-pill">Admin / doctor only</span>
+            </div>
+            ${patientStats}
+          </div>
+
+          <div class="doctor-workspace">
+            <div class="doctor-workspace-head">
+              <div>
+                <h3>Doctor Review Workspace</h3>
+                <p class="muted">A focused admin-only X-ray workspace with organized upload, preview, result, and next-scan flow.</p>
+              </div>
+              <span class="role-pill">Step 1: X-ray</span>
+            </div>
+
+            <div class="admin-scan-grid">
+              <div class="scan-control-panel scan-tools-stack">
+                <div class="scan-panel-title">
+                  <div>
+                    <h3>Upload and configure</h3>
+                    <p class="muted">Prepare the selected patient's chest X-ray before analysis.</p>
+                  </div>
+                  <span class="step-badge">1</span>
+                </div>
+                <label class="upload-box scan-upload">
+                  <input id="adminXrayInput" type="file" accept="image/*,.tif,.tiff" />
+                  <span><strong>Choose chest X-ray</strong><br />JPG, PNG, WEBP, BMP, or TIF. File stays local.</span>
+                </label>
+                <label class="field">X-ray view
+                  <select id="adminXrayView">
+                    <option value="unknown">Unknown / not sure</option>
+                    <option value="frontal">Frontal chest X-ray</option>
+                    <option value="ap">AP chest X-ray</option>
+                    <option value="pa">PA chest X-ray</option>
+                    <option value="lateral">Lateral chest X-ray</option>
+                  </select>
+                </label>
+                <div class="button-row">
+                  <button class="btn" id="adminAnalyzeBtn" disabled type="button">Analyze X-ray</button>
+                  <button class="btn secondary" id="adminClearScanBtn" type="button">Clear</button>
+                </div>
+                <div class="message" id="adminScanMessage"></div>
+
+                <div class="scan-mini-checklist">
+                  <span>Confirm the image belongs to ${escapeHtml(patient.username)}.</span>
+                  <span>Check image quality, view, rotation, and exposure.</span>
+                  <span>Use the output only with symptoms, vitals, oxygen saturation, and clinician review.</span>
+                </div>
+              </div>
+
+              <div class="scan-result-panel">
+                <div class="scan-panel-title">
+                  <div>
+                    <h3>Preview and result</h3>
+                    <p class="muted">Review the image preview, then read the local model output.</p>
+                  </div>
+                  <span class="step-badge">2</span>
+                </div>
+                <div class="scan-preview-frame" id="adminPreviewFrame">
+                  <div class="empty-state" id="adminPreviewEmpty">Choose a chest X-ray to preview it here before analysis.</div>
+                  <img id="adminPreview" class="preview admin-xray-preview" alt="Selected patient X-ray preview" />
+                </div>
+                <div id="adminScanResult">
+                  <div class="empty-state">Upload and analyze an X-ray to see the model score, doctor checklist, and evidence links.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="adminNextScanSlot"></div>
+
+          <div class="scan-context-grid">
+            <div>
+              <div class="panel">
+                <h3>Latest check-in</h3>
+                ${latestCheckinHtml}
+              </div>
+            </div>
+            <div>
+              <div class="panel">
+                <h3>Recent scans</h3>
+                <div class="list">${recentScansHtml}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const adminBookingsPage = document.getElementById("adminBookingsPage");
+      adminBookingsPage.innerHTML = `
+        ${patientHeader}
+        ${patientStats}
+        <div class="two-grid">
+          <div>
+            <h3>Book appointment</h3>
+            <div class="appointment-form">
+              <label class="field">Title <input id="adminAppointmentTitle" value="PneumoScan follow-up" /></label>
+              <label class="field">Date / time <input id="adminAppointmentTime" placeholder="Example: Friday 3:00 PM" /></label>
+              <label class="field">Notes <textarea id="adminAppointmentNotes" placeholder="What the user should prepare or remember"></textarea></label>
+              <button class="btn" id="bookAppointmentBtn" type="button">Book appointment</button>
+              <div class="message" id="adminAppointmentMessage"></div>
+            </div>
+            <div class="list" style="margin-top:12px;">
+              ${appointmentsHtml}
+            </div>
+          </div>
+
+          <div>
+            <h3>Appointment notes</h3>
+            <div class="notice">
+              Booking creates an item in the patient's Mail page automatically. Use the Chats page for extra explanation or follow-up.
+            </div>
+            <div class="button-row" style="margin-top:14px;">
+              <button class="btn secondary" data-jump="adminChatView" type="button">Open patient chat</button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      const adminChatPage = document.getElementById("adminChatPage");
+      adminChatPage.innerHTML = `
+        ${patientHeader}
+        ${patientStats}
+        <div class="two-grid">
+          <div>
+            <h3>Chat thread</h3>
+            <div class="message-thread" id="adminMailThread"></div>
+          </div>
+          <div>
+            <h3>Send message</h3>
+            <div class="mail-compose">
+              <label class="field">Message <textarea id="adminMessageInput" placeholder="Message this user"></textarea></label>
+              <button class="btn" id="sendAdminMessageBtn" type="button">Send to user</button>
+              <div class="message" id="adminMessageStatus"></div>
+            </div>
+            <div class="notice">
+              Patient replies appear on this Chats page. Appointments are managed separately in Booking Appointments.
+            </div>
+          </div>
+        </div>
+      `;
+
+      renderThread("adminMailThread", data.messages);
+      bindJumpButtons(adminPatientDetail);
+      bindJumpButtons(adminBookingsPage);
+      const xrayInput = document.getElementById("adminXrayInput");
+      const analyzeButton = document.getElementById("adminAnalyzeBtn");
+      const clearScanButton = document.getElementById("adminClearScanBtn");
+      if (xrayInput && analyzeButton && clearScanButton) {
+        xrayInput.addEventListener("change", handleAdminFile);
+        analyzeButton.addEventListener("click", analyzeAdminXray);
+        clearScanButton.addEventListener("click", clearAdminScan);
+      }
+      bindAdminBloodControls();
+      const bookButton = document.getElementById("bookAppointmentBtn");
+      const messageButton = document.getElementById("sendAdminMessageBtn");
+      if (bookButton) bookButton.addEventListener("click", bookAppointment);
+      if (messageButton) messageButton.addEventListener("click", sendAdminMessage);
+    }
+
+    function bindAdminBloodControls() {
+      const bloodInput = document.getElementById("adminBloodInput");
+      const bloodAnalyzeButton = document.getElementById("adminBloodAnalyzeBtn");
+      const bloodClearButton = document.getElementById("adminBloodClearBtn");
+      if (bloodInput && bloodAnalyzeButton && bloodClearButton) {
+        bloodInput.addEventListener("change", handleAdminBloodFile);
+        bloodAnalyzeButton.addEventListener("click", analyzeAdminBlood);
+        bloodClearButton.addEventListener("click", clearAdminBlood);
+      }
+    }
+
+    function handleAdminFile() {
+      const input = document.getElementById("adminXrayInput");
+      const previewImage = document.getElementById("adminPreview");
+      const previewEmpty = document.getElementById("adminPreviewEmpty");
+      const analyzeButton = document.getElementById("adminAnalyzeBtn");
+      const status = document.getElementById("adminScanMessage");
+      adminSelectedFile = input.files[0];
+      analyzeButton.disabled = !adminSelectedFile;
+      if (!adminSelectedFile) return;
+      previewImage.src = URL.createObjectURL(adminSelectedFile);
+      previewImage.classList.add("show");
+      if (previewEmpty) previewEmpty.classList.add("hidden");
+      status.classList.remove("error");
+      status.textContent = "Ready for admin/doctor analysis.";
+      hideNextScanStep();
+    }
+
+    function clearAdminScan() {
+      const input = document.getElementById("adminXrayInput");
+      const previewImage = document.getElementById("adminPreview");
+      const previewEmpty = document.getElementById("adminPreviewEmpty");
+      const analyzeButton = document.getElementById("adminAnalyzeBtn");
+      const status = document.getElementById("adminScanMessage");
+      adminSelectedFile = null;
+      input.value = "";
+      previewImage.removeAttribute("src");
+      previewImage.classList.remove("show");
+      if (previewEmpty) previewEmpty.classList.remove("hidden");
+      analyzeButton.disabled = true;
+      status.textContent = "";
+      document.getElementById("adminScanResult").innerHTML = "<div class=\"empty-state\">Upload and analyze an X-ray to see the model score, doctor checklist, and evidence links.</div>";
+      hideNextScanStep();
+    }
+
+    function scanThreshold(data) {
+      const threshold = Number(data && data.guidance ? data.guidance.threshold : 0.5);
+      return Number.isFinite(threshold) ? threshold : 0.5;
+    }
+
+    function scanIndicatesPneumonia(data) {
+      return Number(data && data.probability) >= scanThreshold(data);
+    }
+
+    function hideNextScanStep() {
+      const slot = document.getElementById("adminNextScanSlot");
+      if (slot) slot.innerHTML = "";
+      adminSelectedBloodFile = null;
+      currentAdminScanResult = null;
+    }
+
+    function recentBloodChecksHtml() {
+      return selectedPatientBloodTests.length ? selectedPatientBloodTests.slice(0, 4).map((item) => `
+        <div class="scan-item">
+          <strong>#${item.id} - ${escapeHtml(item.result_label)}</strong>
+          <span>${escapeHtml(item.predicted_cell)} - ${item.confidence}% confidence - ${new Date(item.created_at).toLocaleString()}</span>
+        </div>
+      `).join("") : "<div class=\"empty-state\">No blood sample checks have been saved for this patient yet.</div>";
+    }
+
+    function renderRecentBloodChecks() {
+      const target = document.getElementById("adminBloodHistoryList");
+      if (target) target.innerHTML = recentBloodChecksHtml();
+    }
+
+    function renderNextScanStep(data) {
+      const slot = document.getElementById("adminNextScanSlot");
+      if (!slot) return;
+
+      currentAdminScanResult = data;
+      const percent = Math.round(Number(data.probability) * 100);
+      const thresholdPercent = Math.round(scanThreshold(data) * 100);
+
+      if (!scanIndicatesPneumonia(data)) {
+        slot.innerHTML = `
+          <div class="blood-panel locked" id="adminBloodGate">
+            <div class="patient-top">
+              <div>
+                <h3>Next scan locked</h3>
+                <p class="muted">The Doctor Review Workspace scan is complete, but it did not indicate a pneumonia-like pattern. Blood sample infection support stays hidden for this patient.</p>
+              </div>
+              <span class="role-pill">No next scan</span>
+            </div>
+            <div class="patient-grid">
+              <div class="small-stat"><span>X-ray signal</span><strong>${percent}%</strong></div>
+              <div class="small-stat"><span>Needed to unlock</span><strong>${thresholdPercent}%+</strong></div>
+              <div class="small-stat"><span>Blood upload</span><strong>Not available</strong></div>
+            </div>
+            <div class="notice" style="margin-top:12px;">
+              <strong>Workflow:</strong> the second scan appears only when the first X-ray scan indicates pneumonia-like findings.
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      slot.innerHTML = `
+        <div class="blood-panel">
+          <div class="patient-top">
+            <div>
+              <h3>Next scan: Blood sample infection support</h3>
+              <p class="muted">The Doctor Review Workspace scan is complete and indicates a pneumonia-like pattern. You can now upload a leukocyte/blood-cell image as a cautious viral-vs-bacterial support step for admin/doctor review.</p>
+            </div>
+            <span class="role-pill">Unlocked</span>
+          </div>
+          <div class="blood-grid">
+            <div>
+              <label class="upload-box">
+                <input id="adminBloodInput" type="file" accept="image/*,.tif,.tiff" />
+                <span><strong>Choose blood-cell image</strong><br />EOSINOPHIL, LYMPHOCYTE, MONOCYTE, or NEUTROPHIL sample</span>
+              </label>
+              <img id="adminBloodPreview" class="preview blood-preview" alt="Selected blood-cell preview" />
+              <div class="button-row">
+                <button class="btn" id="adminBloodAnalyzeBtn" disabled type="button">Analyze blood support</button>
+                <button class="btn secondary" id="adminBloodClearBtn" type="button">Clear blood sample</button>
+              </div>
+              <div class="message" id="adminBloodMessage"></div>
+              <div class="notice" style="margin-top:12px;">
+                <strong>Important:</strong> this does not diagnose viral or bacterial pneumonia. Use it with CBC differential, symptoms, vitals, exam, X-ray review, and local guidance.
+              </div>
+            </div>
+            <div>
+              <h3>Blood support result</h3>
+              <div id="adminBloodResult">
+                <div class="empty-state">Upload a blood-cell image to see cell type probabilities and viral/bacterial support bars.</div>
+              </div>
+              <h3 style="margin-top:16px;">Recent blood checks</h3>
+              <div class="list" id="adminBloodHistoryList">
+                ${recentBloodChecksHtml()}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      bindAdminBloodControls();
+    }
+
+    function handleAdminBloodFile() {
+      const input = document.getElementById("adminBloodInput");
+      const previewImage = document.getElementById("adminBloodPreview");
+      const analyzeButton = document.getElementById("adminBloodAnalyzeBtn");
+      const status = document.getElementById("adminBloodMessage");
+      if (!input || !previewImage || !analyzeButton || !status) return;
+      adminSelectedBloodFile = input.files[0];
+      analyzeButton.disabled = !adminSelectedBloodFile;
+      if (!adminSelectedBloodFile) return;
+      previewImage.src = URL.createObjectURL(adminSelectedBloodFile);
+      previewImage.classList.add("show");
+      status.classList.remove("error");
+      status.textContent = "Blood-cell image ready for local model review.";
+    }
+
+    function clearAdminBlood() {
+      const input = document.getElementById("adminBloodInput");
+      const previewImage = document.getElementById("adminBloodPreview");
+      const analyzeButton = document.getElementById("adminBloodAnalyzeBtn");
+      const status = document.getElementById("adminBloodMessage");
+      if (!input || !previewImage || !analyzeButton || !status) return;
+      adminSelectedBloodFile = null;
+      input.value = "";
+      previewImage.removeAttribute("src");
+      previewImage.classList.remove("show");
+      analyzeButton.disabled = true;
+      status.textContent = "";
+      document.getElementById("adminBloodResult").innerHTML = "<div class=\"empty-state\">Upload a blood-cell image to see cell type probabilities and viral/bacterial support bars.</div>";
+    }
+
+    async function analyzeAdminBlood() {
+      if (!adminSelectedBloodFile || !selectedPatientId) return;
+      const button = document.getElementById("adminBloodAnalyzeBtn");
+      const status = document.getElementById("adminBloodMessage");
+      if (!button || !status) return;
+      if (!currentAdminScanResult || !scanIndicatesPneumonia(currentAdminScanResult)) {
+        status.textContent = "Run the Doctor Review Workspace X-ray scan first. Blood support unlocks only when that scan indicates pneumonia.";
+        status.classList.add("error");
+        return;
+      }
+      button.disabled = true;
+      status.classList.remove("error");
+      status.textContent = "Analyzing blood-cell support locally...";
+      const body = new FormData();
+      body.append("patient_id", String(selectedPatientId));
+      body.append("scan_id", String(currentAdminScanResult.scan_id));
+      body.append("file", adminSelectedBloodFile);
+      try {
+        const data = await api("/api/admin/analyze-blood", { method: "POST", body });
+        status.textContent = "Blood support review saved to this patient.";
+        adminSelectedBloodFile = null;
+        selectedPatientBloodTests = [{
+          id: data.blood_test_id,
+          result_label: data.result_label,
+          predicted_cell: data.predicted_cell,
+          confidence: data.confidence,
+          created_at: data.created_at
+        }, ...selectedPatientBloodTests].slice(0, 4);
+        const input = document.getElementById("adminBloodInput");
+        const previewImage = document.getElementById("adminBloodPreview");
+        if (input) input.value = "";
+        if (previewImage) {
+          previewImage.removeAttribute("src");
+          previewImage.classList.remove("show");
+        }
+        renderAdminBloodResult(data);
+        renderRecentBloodChecks();
+      } catch (error) {
+        status.textContent = cleanError(error);
+        status.classList.add("error");
+      } finally {
+        const nextButton = document.getElementById("adminBloodAnalyzeBtn");
+        if (nextButton) nextButton.disabled = !adminSelectedBloodFile;
+      }
+    }
+
+    async function analyzeAdminXray() {
+      if (!adminSelectedFile || !selectedPatientId) return;
+      const button = document.getElementById("adminAnalyzeBtn");
+      const status = document.getElementById("adminScanMessage");
+      button.disabled = true;
+      status.classList.remove("error");
+      status.textContent = "Analyzing for admin/doctor review...";
+      const body = new FormData();
+      body.append("patient_id", String(selectedPatientId));
+      body.append("xray_view", document.getElementById("adminXrayView").value);
+      body.append("file", adminSelectedFile);
+      try {
+        const data = await api("/api/admin/analyze", { method: "POST", body });
+        status.textContent = "Saved to this patient's scan history.";
+        adminSelectedFile = null;
+        await refreshAdmin();
+        renderAdminScanResult(data);
+        renderNextScanStep(data);
+      } catch (error) {
+        status.textContent = cleanError(error);
+        status.classList.add("error");
+      } finally {
+        const nextButton = document.getElementById("adminAnalyzeBtn");
+        if (nextButton) nextButton.disabled = !adminSelectedFile;
+      }
+    }
+
+    function renderAdminScanResult(data) {
+      const target = document.getElementById("adminScanResult");
+      if (!target) return;
+      const percent = Math.round(data.probability * 100);
+      const actions = data.guidance.doctor_actions || data.guidance.advice || [];
+      const evidence = data.guidance.evidence || [];
+      target.innerHTML = `
+        <div class="result show">
+          <h3 class="verdict ${data.probability >= 0.65 ? "high" : data.probability >= 0.5 ? "medium" : "low"}">${escapeHtml(data.result_label)}</h3>
+          <p class="muted">AI model score for doctor review only. Not a diagnosis and not a patient self-scan.</p>
+          <div class="bar"><div class="fill" style="width:${percent}%"></div></div>
+          <strong>${percent}% pneumonia-like pattern probability</strong>
+          <h3 style="margin-top:16px;">Doctor checklist</h3>
+          <ul class="doctor-actions">
+            ${actions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+          </ul>
+          <h3>Evidence links</h3>
+          <div class="evidence-links">
+            ${evidence.map((item) => `
+              <div class="appointment-item">
+                <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.name)}</a>
+                <span>${escapeHtml(item.note)}</span>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+      if (currentAdminScanResult === data) {
+        renderNextScanStep(data);
+      }
+    }
+
+    function renderSupportBar(label, value) {
+      const width = Math.max(0, Math.min(100, Number(value) || 0));
+      return `
+        <div class="support-row">
+          <div class="support-top"><span>${escapeHtml(label)}</span><strong>${width}%</strong></div>
+          <div class="bar"><div class="fill" style="width:${width}%"></div></div>
+        </div>
+      `;
+    }
+
+    function renderAdminBloodResult(data) {
+      const target = document.getElementById("adminBloodResult");
+      if (!target) return;
+      const support = data.support || {};
+      const probabilities = Object.entries(data.probabilities || {})
+        .sort((a, b) => b[1] - a[1]);
+      const actions = data.guidance.doctor_actions || [];
+      const evidence = data.guidance.evidence || [];
+      const verdictClass = data.result_label.includes("bacterial") ? "high" : data.result_label.includes("viral") ? "medium" : "low";
+      target.innerHTML = `
+        <div class="result show">
+          <h3 class="verdict ${verdictClass}">${escapeHtml(data.result_label)}</h3>
+          <p class="muted">${escapeHtml(data.guidance.interpretation || "Use this as clinician support only.")}</p>
+          <strong>${escapeHtml(data.predicted_cell)} - ${data.confidence}% cell-type confidence</strong>
+          ${renderSupportBar("Bacterial support index", support.bacterial_support)}
+          ${renderSupportBar("Viral support index", support.viral_support)}
+          ${renderSupportBar("Other immune pattern", support.other_support)}
+          <div class="cell-prob-grid">
+            ${probabilities.map(([label, value]) => `
+              <div class="cell-chip">
+                <strong>${escapeHtml(label)}</strong>
+                <span>${Math.round(Number(value) * 100)}% model probability</span>
+              </div>
+            `).join("")}
+          </div>
+          <h3 style="margin-top:16px;">Doctor checklist</h3>
+          <ul class="doctor-actions">
+            ${actions.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+          </ul>
+          <h3>Evidence links</h3>
+          <div class="evidence-links">
+            ${evidence.map((item) => `
+              <div class="appointment-item">
+                <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.name)}</a>
+                <span>${escapeHtml(item.note)}</span>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    async function bookAppointment() {
+      const status = document.getElementById("adminAppointmentMessage");
+      status.classList.remove("error");
+      status.textContent = "Booking...";
+      try {
+        await api("/api/admin/appointments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: selectedPatientId,
+            title: document.getElementById("adminAppointmentTitle").value,
+            appointment_at: document.getElementById("adminAppointmentTime").value,
+            notes: document.getElementById("adminAppointmentNotes").value,
+            status: "booked"
+          })
+        });
+        status.textContent = "Appointment booked and sent to Mail.";
+        await selectPatient(selectedPatientId, true);
+        await refreshAdmin();
+      } catch (error) {
+        status.textContent = cleanError(error);
+        status.classList.add("error");
+      }
+    }
+
+    async function sendAdminMessage() {
+      const input = document.getElementById("adminMessageInput");
+      const status = document.getElementById("adminMessageStatus");
+      const body = input.value.trim();
+      if (!body) return;
+      status.classList.remove("error");
+      status.textContent = "Sending...";
+      try {
+        await api("/api/admin/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id: selectedPatientId, body })
+        });
+        input.value = "";
+        status.textContent = "Sent.";
+        await selectPatient(selectedPatientId, true);
+        await refreshAdmin();
+      } catch (error) {
+        status.textContent = cleanError(error);
+        status.classList.add("error");
+      }
+    }
+
+    function renderThread(targetId, messages) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      target.innerHTML = messages.length ? messages.map((item) => `
+        <div class="message-bubble ${item.sender === "admin" ? "admin" : "user"}">
+          <strong>${item.sender === "admin" ? "Admin" : "User"}</strong>
+          <div>${escapeHtml(item.body)}</div>
+          <span>${new Date(item.created_at).toLocaleString()}</span>
+        </div>
+      `).join("") : "<div class=\"empty-state\">No messages yet. Start the conversation when there is an update to share.</div>";
+      target.scrollTop = target.scrollHeight;
+    }
+
+    function toggleTheme(event) {
+      const next = document.body.classList.contains("dark") ? "light" : "dark";
+      const source = event && event.currentTarget ? event.currentTarget : null;
+      animateTheme(next, source);
+    }
+
+    function animateTheme(mode, source) {
+      if (themeAnimating) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        applyTheme(mode);
+        return;
+      }
+
+      themeAnimating = true;
+      const rect = source ? source.getBoundingClientRect() : null;
+      const x = rect ? rect.left + rect.width / 2 : window.innerWidth - 70;
+      const y = rect ? rect.top + rect.height / 2 : window.innerHeight - 70;
+      themeWipe.style.setProperty("--wipe-x", `${x}px`);
+      themeWipe.style.setProperty("--wipe-y", `${y}px`);
+      themeWipe.className = `theme-wipe ${mode === "light" ? "to-light" : ""}`;
+      void themeWipe.offsetWidth;
+      themeWipe.classList.add("run");
+
+      window.setTimeout(() => applyTheme(mode), 170);
+      window.setTimeout(() => {
+        themeWipe.className = "theme-wipe";
+        themeAnimating = false;
+      }, 560);
+    }
+
+    function applyTheme(mode) {
+      document.body.classList.toggle("dark", mode === "dark");
+      localStorage.setItem(themeKey, mode);
+      document.getElementById("darkToggle").textContent = mode === "dark" ? "Light mode" : "Dark mode";
+      document.getElementById("topDarkToggle").textContent = mode === "dark" ? "Light mode" : "Dark mode";
+    }
+
+    async function api(path, options = {}) {
+      const headers = new Headers(options.headers || {});
+      if (options.auth !== false && token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+      const response = await fetch(path, { ...options, headers });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(formatApiError(data.detail || data || "Something went wrong."));
+      }
+      return data;
+    }
+
+    function formatApiError(detail) {
+      if (typeof detail === "string") return detail;
+      if (Array.isArray(detail)) return detail.map((item) => item.msg || JSON.stringify(item)).join("\n");
+      if (detail && typeof detail === "object") return detail.message || detail.detail || JSON.stringify(detail);
+      return "Something went wrong.";
+    }
+
+    function cleanError(error) {
+      return error && error.message ? error.message : formatApiError(error);
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>

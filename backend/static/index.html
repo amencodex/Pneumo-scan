@@ -1,0 +1,2629 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PneumoScan Research - Local Chest X-ray Model</title>
+  <script>
+    (() => {
+      const script = document.createElement("script");
+      script.defer = true;
+      script.src = window.location.protocol === "file:" ? "amharic_translate.js" : "/static/amharic_translate.js";
+      document.head.appendChild(script);
+    })();
+  </script>
+  <style>
+    :root {
+      --bg: #f6fafc;
+      --surface: #ffffff;
+      --surface-soft: #eef8f6;
+      --ink: #13211e;
+      --muted: #60736f;
+      --line: #dce9e6;
+      --teal: #0caa8a;
+      --teal-dark: #08715f;
+      --blue: #2f79d6;
+      --orange: #d97706;
+      --red: #c24132;
+      --green: #16805d;
+      --shadow: 0 22px 65px rgba(23, 63, 58, 0.13);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 8% 6%, rgba(12, 170, 138, 0.14), transparent 32%),
+        radial-gradient(circle at 100% 0%, rgba(47, 121, 214, 0.10), transparent 30%),
+        linear-gradient(180deg, #ffffff, var(--bg));
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 0;
+      backdrop-filter: blur(16px);
+      background: linear-gradient(180deg, rgba(246, 250, 252, .88), rgba(246, 250, 252, .62));
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 220px;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      color: white;
+      background: linear-gradient(135deg, var(--teal), var(--blue));
+      box-shadow: 0 14px 32px rgba(12, 170, 138, 0.28);
+      font-weight: 950;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 1.05rem;
+      line-height: 1.1;
+    }
+
+    .brand p {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .nav-links a {
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.84);
+      font-size: 0.86rem;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .nav-links a:hover {
+      transform: translateY(-1px);
+      border-color: rgba(12, 170, 138, .35);
+      box-shadow: 0 10px 24px rgba(23, 63, 58, .08);
+    }
+
+    .nav-links a.sign-in-link {
+      color: white;
+      border-color: transparent;
+      background: linear-gradient(135deg, var(--teal), var(--blue));
+      box-shadow: 0 12px 28px rgba(12, 170, 138, 0.24);
+    }
+
+    .hero {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1.04fr 0.96fr;
+      gap: 20px;
+      align-items: stretch;
+      padding: 18px 0 28px;
+    }
+
+    .hero-panel,
+    .safety-panel,
+    .card,
+    .analyzer,
+    .result-panel {
+      border: 1px solid rgba(220, 233, 230, 0.95);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-panel {
+      position: relative;
+      overflow: hidden;
+      min-height: 520px;
+      padding: 42px;
+      background:
+        radial-gradient(circle at 12% 12%, rgba(12, 170, 138, .14), transparent 32%),
+        linear-gradient(140deg, rgba(255, 255, 255, .96), rgba(238, 248, 246, .92));
+      animation: panelRise 650ms ease both;
+    }
+
+    .hero-panel::after {
+      content: "";
+      position: absolute;
+      inset: auto -18% -38% 30%;
+      height: 240px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(47, 121, 214, .16), transparent 68%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: var(--surface-soft);
+      font-size: 0.76rem;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hero h2 {
+      max-width: 780px;
+      margin: 0 0 14px;
+      font-size: clamp(2.15rem, 4.7vw, 4.4rem);
+      line-height: 0.96;
+      letter-spacing: 0;
+    }
+
+    .hero h2 span {
+      color: var(--teal-dark);
+    }
+
+    .hero-copy {
+      max-width: 720px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.68;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .hero-stats {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 28px;
+    }
+
+    .hero-stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 13px;
+      background: rgba(255, 255, 255, .72);
+      box-shadow: 0 12px 28px rgba(23, 63, 58, .06);
+    }
+
+    .hero-stat strong,
+    .hero-stat span {
+      display: block;
+    }
+
+    .hero-stat strong {
+      font-size: 1.18rem;
+      line-height: 1;
+    }
+
+    .hero-stat span {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .primary-btn,
+    .ghost-btn {
+      min-height: 46px;
+      border-radius: 8px;
+      padding: 0 16px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+    }
+
+    .primary-btn {
+      border: 0;
+      color: white;
+      background: linear-gradient(135deg, var(--teal), var(--blue));
+      box-shadow: 0 16px 32px rgba(12, 170, 138, 0.28);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ghost-btn {
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: white;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .primary-btn:hover:not(:disabled),
+    .ghost-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .primary-btn:disabled,
+    .ghost-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .safety-panel {
+      display: grid;
+      gap: 16px;
+      align-content: center;
+      padding: 28px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(238, 248, 246, 0.92)),
+        repeating-linear-gradient(135deg, transparent 0 12px, rgba(12, 170, 138, 0.04) 12px 24px);
+    }
+
+    .hero-visual {
+      position: relative;
+      display: grid;
+      gap: 14px;
+      align-content: stretch;
+      padding: 18px;
+      overflow: hidden;
+      border: 1px solid rgba(220, 233, 230, 0.95);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .94), rgba(238, 248, 246, .90)),
+        repeating-linear-gradient(135deg, transparent 0 12px, rgba(12, 170, 138, 0.045) 12px 24px);
+      box-shadow: var(--shadow);
+      animation: panelRise 780ms ease 80ms both;
+    }
+
+    .scan-card {
+      position: relative;
+      min-height: 310px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        radial-gradient(circle at 50% 38%, rgba(12, 170, 138, .16), transparent 30%),
+        linear-gradient(145deg, #071a18, #102e32 54%, #eef8f6);
+      color: white;
+    }
+
+    .scan-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255, 255, 255, .08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .08) 1px, transparent 1px);
+      background-size: 26px 26px;
+      opacity: .35;
+    }
+
+    .scan-top {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+      font-size: .8rem;
+      font-weight: 900;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .scan-pill {
+      padding: 6px 9px;
+      border: 1px solid rgba(255, 255, 255, .28);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .12);
+    }
+
+    .lung-stage {
+      position: absolute;
+      inset: 54px 32px 32px;
+      display: grid;
+      place-items: center;
+    }
+
+    .lung-shape {
+      position: relative;
+      width: min(78%, 250px);
+      aspect-ratio: 1.08;
+      border: 1px solid rgba(255, 255, 255, .22);
+      border-radius: 8px;
+      background:
+        radial-gradient(ellipse at 35% 48%, rgba(255, 255, 255, .86) 0 20%, rgba(12, 170, 138, .34) 21% 34%, transparent 35%),
+        radial-gradient(ellipse at 65% 48%, rgba(255, 255, 255, .86) 0 20%, rgba(12, 170, 138, .34) 21% 34%, transparent 35%),
+        linear-gradient(180deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .04));
+      box-shadow: inset 0 0 42px rgba(255, 255, 255, .16), 0 20px 48px rgba(0, 0, 0, .18);
+    }
+
+    .lung-shape::before,
+    .lung-shape::after {
+      content: "";
+      position: absolute;
+      top: 18%;
+      width: 32%;
+      height: 54%;
+      border-radius: 46% 46% 42% 42%;
+      border: 2px solid rgba(255, 255, 255, .68);
+      background: rgba(255, 255, 255, .08);
+    }
+
+    .lung-shape::before {
+      left: 16%;
+      transform: rotate(-8deg);
+    }
+
+    .lung-shape::after {
+      right: 16%;
+      transform: rotate(8deg);
+    }
+
+    .scan-line {
+      position: absolute;
+      left: 8%;
+      right: 8%;
+      height: 2px;
+      top: 22%;
+      z-index: 2;
+      background: linear-gradient(90deg, transparent, rgba(40, 215, 182, .95), transparent);
+      box-shadow: 0 0 28px rgba(40, 215, 182, .95);
+      animation: scanSweep 3.2s ease-in-out infinite;
+    }
+
+    .scanner-ring {
+      position: absolute;
+      inset: 16%;
+      border: 1px solid rgba(255, 255, 255, .22);
+      border-radius: 50%;
+      animation: pulseRing 3s ease-in-out infinite;
+    }
+
+    .visual-card-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .visual-mini-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(255, 255, 255, .78);
+      animation: panelRise 700ms ease both;
+    }
+
+    .visual-mini-card:nth-child(2) {
+      animation-delay: 120ms;
+    }
+
+    .visual-mini-card:nth-child(3) {
+      animation-delay: 220ms;
+    }
+
+    .visual-mini-card strong,
+    .visual-mini-card span {
+      display: block;
+    }
+
+    .visual-mini-card strong {
+      color: var(--teal-dark);
+      font-size: 1.05rem;
+    }
+
+    .visual-mini-card span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: .78rem;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .hero-safety-note {
+      margin: 0;
+      border: 1px solid rgba(217, 119, 6, .28);
+      border-radius: 8px;
+      padding: 14px;
+      color: #784305;
+      background: #fff8ed;
+      line-height: 1.55;
+      font-size: .92rem;
+    }
+
+    @keyframes panelRise {
+      from {
+        opacity: 0;
+        transform: translateY(14px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes scanSweep {
+      0%, 100% {
+        top: 22%;
+        opacity: .35;
+      }
+      45%, 55% {
+        opacity: 1;
+      }
+      50% {
+        top: 78%;
+      }
+    }
+
+    @keyframes pulseRing {
+      0%, 100% {
+        transform: scale(.95);
+        opacity: .26;
+      }
+      50% {
+        transform: scale(1.08);
+        opacity: .62;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .001ms !important;
+      }
+    }
+
+    .safety-panel h3 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .safety-panel p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .safety-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .safety-list li {
+      display: flex;
+      gap: 10px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .check {
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      color: white;
+      background: var(--teal);
+      font-size: 0.74rem;
+      font-weight: 950;
+    }
+
+    .section {
+      padding: 22px 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: clamp(1.5rem, 3vw, 2.35rem);
+      letter-spacing: 0;
+    }
+
+    .section-head p {
+      max-width: 620px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .metric-card {
+      min-height: 150px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+      box-shadow: 0 12px 32px rgba(23, 63, 58, 0.08);
+    }
+
+    .metric-card strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--teal-dark);
+      font-size: clamp(1.55rem, 3vw, 2.2rem);
+      line-height: 1;
+    }
+
+    .metric-card span {
+      display: block;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.9rem;
+    }
+
+    .pneumonia-overview {
+      display: grid;
+      grid-template-columns: 1.08fr .92fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .overview-panel {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 88% 12%, rgba(47, 121, 214, .14), transparent 28%),
+        linear-gradient(145deg, rgba(255, 255, 255, .96), rgba(238, 248, 246, .90));
+      box-shadow: 0 12px 32px rgba(23, 63, 58, 0.08);
+    }
+
+    .overview-panel h3 {
+      margin: 0 0 10px;
+      font-size: 1.35rem;
+    }
+
+    .overview-panel p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .overview-points {
+      display: grid;
+      gap: 10px;
+      margin: 18px 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .overview-points li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .overview-points strong {
+      color: var(--ink);
+    }
+
+    .urgent-panel {
+      color: white;
+      background:
+        radial-gradient(circle at 85% 18%, rgba(255, 255, 255, .16), transparent 26%),
+        linear-gradient(145deg, #071a18, #10343a 62%, #175f64);
+    }
+
+    .urgent-panel p,
+    .urgent-panel .overview-points li {
+      color: rgba(255, 255, 255, .78);
+    }
+
+    .urgent-panel .overview-points strong {
+      color: white;
+    }
+
+    .urgent-panel .overview-badge {
+      color: white;
+      border-color: rgba(255, 255, 255, .24);
+      background: rgba(255, 255, 255, .12);
+    }
+
+    .overview-badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      min-height: 30px;
+      margin-bottom: 14px;
+      padding: 0 10px;
+      border: 1px solid rgba(12, 170, 138, .22);
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: rgba(12, 170, 138, .10);
+      font-size: .72rem;
+      font-weight: 950;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .care-map-grid {
+      display: grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .globe-card {
+      position: relative;
+      overflow: hidden;
+      min-height: 470px;
+      padding: 28px;
+      border: 1px solid rgba(220, 233, 230, 0.95);
+      border-radius: 8px;
+      background:
+        radial-gradient(circle at 50% 28%, rgba(12, 170, 138, .18), transparent 28%),
+        linear-gradient(150deg, #071a18, #10343a 58%, #e9f8f5);
+      color: white;
+      box-shadow: var(--shadow);
+    }
+
+    .globe-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255, 255, 255, .06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .06) 1px, transparent 1px);
+      background-size: 30px 30px;
+      opacity: .45;
+    }
+
+    .globe-copy,
+    .globe-actions,
+    .hospital-status {
+      position: relative;
+      z-index: 2;
+    }
+
+    .globe-copy h3 {
+      margin: 0 0 10px;
+      font-size: clamp(1.45rem, 3vw, 2rem);
+    }
+
+    .globe-copy p {
+      margin: 0;
+      max-width: 460px;
+      color: rgba(255, 255, 255, .76);
+      line-height: 1.55;
+    }
+
+    .care-globe {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: min(78vw, 260px);
+      aspect-ratio: 1;
+      margin: 28px auto 24px;
+      padding: 0;
+      border: 0;
+      color: inherit;
+      background: transparent;
+      cursor: grab;
+      perspective: 900px;
+    }
+
+    .care-globe:active {
+      cursor: grabbing;
+    }
+
+    .globe-core {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .32);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 33% 28%, rgba(255, 255, 255, .8), transparent 0 9%, transparent 10%),
+        radial-gradient(circle at 58% 58%, rgba(12, 170, 138, .72), transparent 0 16%, transparent 17%),
+        radial-gradient(circle at 38% 62%, rgba(47, 121, 214, .82), transparent 0 13%, transparent 14%),
+        linear-gradient(135deg, #0fb69b, #226fc8 54%, #071a18);
+      box-shadow:
+        inset -26px -32px 60px rgba(0, 0, 0, .32),
+        inset 18px 18px 34px rgba(255, 255, 255, .18),
+        0 26px 70px rgba(0, 0, 0, .34);
+      animation: globeFloat 5.5s ease-in-out infinite;
+    }
+
+    .globe-core::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, .16) 0 1px, transparent 1px 30px),
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, .14) 0 1px, transparent 1px 30px);
+      border-radius: inherit;
+      animation: globeLines 8s linear infinite;
+    }
+
+    .globe-core::after {
+      content: "";
+      position: absolute;
+      inset: 14%;
+      border: 2px solid rgba(255, 255, 255, .34);
+      border-left-color: transparent;
+      border-right-color: transparent;
+      border-radius: 50%;
+      transform: rotate(-18deg);
+    }
+
+    .care-globe.is-spinning .globe-core {
+      animation: globeQuickSpin 1.1s cubic-bezier(.2, .8, .2, 1), globeFloat 5.5s ease-in-out 1.1s infinite;
+    }
+
+    .globe-orbit {
+      position: absolute;
+      inset: -14px;
+      border: 1px solid rgba(255, 255, 255, .22);
+      border-radius: 50%;
+      transform: rotate(-18deg);
+    }
+
+    .globe-pin {
+      position: absolute;
+      top: 20%;
+      right: 18%;
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 50% 50% 50% 8px;
+      color: #062a28;
+      background: #ffffff;
+      transform: rotate(45deg);
+      box-shadow: 0 16px 30px rgba(0, 0, 0, .24);
+    }
+
+    .globe-pin span {
+      transform: rotate(-45deg);
+      font-weight: 950;
+    }
+
+    .globe-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .globe-actions .ghost-btn {
+      background: rgba(255, 255, 255, .12);
+      border-color: rgba(255, 255, 255, .32);
+      color: white;
+    }
+
+    .hospital-status {
+      min-height: 22px;
+      margin-top: 14px;
+      color: rgba(255, 255, 255, .78);
+      font-size: .9rem;
+      line-height: 1.45;
+    }
+
+    .earth-stage {
+      position: relative;
+      z-index: 1;
+      min-height: 360px;
+      margin: 22px 0 20px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .22);
+      border-radius: 8px;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(88, 230, 215, .20), transparent 35%),
+        radial-gradient(circle at 20% 15%, rgba(255, 255, 255, .13), transparent 26%),
+        linear-gradient(145deg, rgba(255, 255, 255, .08), rgba(255, 255, 255, .025));
+      cursor: grab;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), inset 0 -42px 95px rgba(0, 0, 0, .22);
+    }
+
+    .earth-stage::before,
+    .earth-stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .earth-stage::before {
+      background:
+        radial-gradient(circle at 50% 50%, transparent 0 36%, rgba(31, 221, 199, .13) 37%, transparent 54%),
+        radial-gradient(circle at 50% 50%, transparent 0 48%, rgba(255, 255, 255, .09) 49%, transparent 51%);
+    }
+
+    .earth-stage::after {
+      background: radial-gradient(circle at 52% 50%, transparent 0 37%, rgba(5, 21, 23, .40) 62%, rgba(5, 21, 23, .72) 100%);
+      mix-blend-mode: multiply;
+      opacity: .35;
+    }
+
+    .earth-stage:active {
+      cursor: grabbing;
+    }
+
+    .earth-viewer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      image-rendering: auto;
+      transform: translateZ(0);
+      z-index: 1;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(45, 210, 190, .16), transparent 38%),
+        linear-gradient(140deg, rgba(3, 21, 23, .18), rgba(3, 21, 23, .62));
+    }
+
+    .earth-status {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: rgba(255, 255, 255, .86);
+      text-align: center;
+      font-weight: 900;
+      line-height: 1.45;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(12, 170, 138, .22), transparent 34%),
+        linear-gradient(145deg, rgba(4, 21, 24, .88), rgba(5, 43, 50, .82));
+      pointer-events: none;
+      transition: opacity 220ms ease, visibility 220ms ease;
+    }
+
+    .model-ready .earth-status {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .model-error .earth-status {
+      color: #ffe3ca;
+      background:
+        radial-gradient(circle at 50% 46%, rgba(241, 141, 54, .18), transparent 34%),
+        linear-gradient(145deg, rgba(32, 17, 10, .90), rgba(45, 22, 15, .84));
+    }
+
+    .earth-hud {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      z-index: 2;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      pointer-events: none;
+    }
+
+    .earth-nearby-btn {
+      border: 1px solid rgba(255, 255, 255, .24);
+      border-radius: 999px;
+      padding: 7px 10px;
+      color: rgba(255, 255, 255, .88);
+      background: rgba(3, 19, 20, .42);
+      backdrop-filter: blur(10px);
+      font-size: .72rem;
+      font-weight: 950;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .earth-nearby-btn {
+      min-height: 42px;
+      padding: 0 18px;
+      color: white;
+      background: linear-gradient(135deg, var(--teal), var(--blue));
+      box-shadow: 0 16px 34px rgba(12, 170, 138, .28);
+      cursor: pointer;
+      pointer-events: auto;
+      transition: transform 160ms ease, box-shadow 160ms ease;
+    }
+
+    .earth-nearby-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 42px rgba(12, 170, 138, .34);
+    }
+
+    .learning-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+
+    .video-card {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+      box-shadow: 0 12px 32px rgba(23, 63, 58, 0.08);
+    }
+
+    .video-shell {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #071a18;
+      aspect-ratio: 16 / 9;
+    }
+
+    .local-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #071a18;
+    }
+
+    .video-poster-card {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: grid;
+      place-items: center;
+      border: 0;
+      color: white;
+      background:
+        radial-gradient(circle at 50% 42%, rgba(12, 170, 138, .28), transparent 27%),
+        linear-gradient(145deg, rgba(7, 26, 24, .88), rgba(16, 52, 58, .86)),
+        repeating-linear-gradient(135deg, transparent 0 12px, rgba(255, 255, 255, .04) 12px 24px);
+      cursor: pointer;
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+
+    .video-poster-card.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .video-poster-inner {
+      display: grid;
+      gap: 14px;
+      place-items: center;
+      padding: 22px;
+      text-align: center;
+    }
+
+    .play-badge {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      color: #071a18;
+      background: rgba(255, 255, 255, .94);
+      box-shadow: 0 18px 46px rgba(0, 0, 0, .28);
+      transform: translateY(-4px);
+    }
+
+    .play-badge::before {
+      content: "";
+      width: 0;
+      height: 0;
+      margin-left: 5px;
+      border-top: 13px solid transparent;
+      border-bottom: 13px solid transparent;
+      border-left: 20px solid #071a18;
+    }
+
+    .video-poster-title {
+      display: block;
+      font-size: 1.05rem;
+      font-weight: 900;
+    }
+
+    .video-poster-subtitle,
+    .video-local-note {
+      color: var(--muted);
+      font-size: .86rem;
+      line-height: 1.5;
+    }
+
+    .video-poster-subtitle {
+      color: rgba(255, 255, 255, .72);
+    }
+
+    .process-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .process-flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .process-step {
+      min-height: 82px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #ffffff, #f4fbf9);
+    }
+
+    .process-step strong,
+    .process-step span {
+      display: block;
+    }
+
+    .process-step strong {
+      color: var(--teal-dark);
+      font-size: .78rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .process-step span {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.4;
+    }
+
+    @keyframes globeFloat {
+      0%, 100% {
+        transform: translateY(0) rotate(-4deg);
+      }
+      50% {
+        transform: translateY(-8px) rotate(4deg);
+      }
+    }
+
+    @keyframes globeLines {
+      to {
+        transform: translateX(30px);
+      }
+    }
+
+    @keyframes globeQuickSpin {
+      from {
+        transform: rotateY(0deg) rotate(-4deg);
+      }
+      to {
+        transform: rotateY(360deg) rotate(-4deg);
+      }
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      padding: 22px;
+    }
+
+    .card h3 {
+      margin: 0 0 12px;
+      font-size: 1.02rem;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.62;
+    }
+
+    .bullet-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .bullet-list li {
+      display: flex;
+      gap: 10px;
+      color: var(--muted);
+      line-height: 1.48;
+    }
+
+    .bullet-dot {
+      flex: 0 0 auto;
+      width: 8px;
+      height: 8px;
+      margin-top: 7px;
+      border-radius: 50%;
+      background: var(--teal);
+    }
+
+    .analyzer-grid {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 14px;
+      align-items: start;
+    }
+
+    .analyzer,
+    .result-panel {
+      padding: 24px;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .panel-title h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .tag {
+      border-radius: 999px;
+      padding: 6px 9px;
+      color: var(--teal-dark);
+      background: var(--surface-soft);
+      font-size: 0.72rem;
+      font-weight: 950;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .field-stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    .file-box {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 144px;
+      padding: 20px;
+      border: 2px dashed #a7d7cc;
+      border-radius: 8px;
+      background: #fbfefd;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+    }
+
+    .file-box:hover,
+    .file-box.dragging {
+      border-color: var(--teal);
+      background: #f0fbf7;
+      transform: translateY(-1px);
+    }
+
+    .model-auto-card {
+      cursor: default;
+    }
+
+    .model-auto-card:hover {
+      border-color: #a7d7cc;
+      background: #fbfefd;
+      transform: none;
+    }
+
+    .model-system-status {
+      display: none;
+    }
+
+    .file-box input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .file-box strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 1rem;
+    }
+
+    .file-box span {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .model-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .mini-card {
+      min-height: 78px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfefd;
+    }
+
+    .mini-label {
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 950;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .mini-value {
+      margin-top: 7px;
+      font-weight: 950;
+      overflow-wrap: anywhere;
+    }
+
+    .preview-stage {
+      display: grid;
+      place-items: center;
+      min-height: 380px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(45deg, #f3f8f7 25%, transparent 25%),
+        linear-gradient(-45deg, #f3f8f7 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #f3f8f7 75%),
+        linear-gradient(-45deg, transparent 75%, #f3f8f7 75%);
+      background-color: #ffffff;
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+    }
+
+    .preview-stage img {
+      display: none;
+      max-width: 100%;
+      max-height: 420px;
+      object-fit: contain;
+      border-radius: 6px;
+      box-shadow: 0 18px 45px rgba(16, 32, 25, 0.16);
+      filter: grayscale(1);
+    }
+
+    .empty-preview {
+      max-width: 360px;
+      padding: 22px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .image-loaded .empty-preview {
+      display: none;
+    }
+
+    .image-loaded img {
+      display: block;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 850;
+    }
+
+    select {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      color: var(--ink);
+      background: white;
+      outline: none;
+    }
+
+    select:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 4px rgba(12, 170, 138, 0.12);
+    }
+
+    .message {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.45;
+    }
+
+    .message.error {
+      color: var(--red);
+      font-weight: 850;
+    }
+
+    .verdict-card {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #ffffff, #f6fbf9);
+    }
+
+    .verdict-kicker {
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 950;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .verdict {
+      margin: 8px 0 6px;
+      font-size: clamp(1.7rem, 3.5vw, 3rem);
+      line-height: 1;
+      font-weight: 950;
+      letter-spacing: 0;
+    }
+
+    .verdict.neutral {
+      color: var(--muted);
+    }
+
+    .verdict.detected {
+      color: var(--red);
+    }
+
+    .verdict.possible {
+      color: var(--orange);
+    }
+
+    .verdict.clear {
+      color: var(--green);
+    }
+
+    .verdict-copy {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.62;
+    }
+
+    .meter {
+      display: grid;
+      gap: 8px;
+      margin: 16px 0;
+    }
+
+    .meter-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      font-weight: 850;
+    }
+
+    .bar {
+      height: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e8f0ee;
+    }
+
+    .fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), var(--orange), var(--red));
+      transition: width 700ms ease;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .pipeline {
+      display: grid;
+      gap: 10px;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+    }
+
+    .step-num {
+      display: grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      color: var(--muted);
+      background: #edf5f3;
+      font-size: 0.8rem;
+      font-weight: 950;
+      flex: 0 0 auto;
+    }
+
+    .step.done .step-num {
+      color: white;
+      background: var(--teal);
+    }
+
+    .step strong {
+      display: block;
+      font-size: 0.9rem;
+    }
+
+    .step span {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .notice {
+      margin-top: 16px;
+      padding: 14px;
+      border: 1px solid rgba(217, 119, 6, 0.26);
+      border-radius: 8px;
+      color: #7a4f0a;
+      background: #fff8e8;
+      line-height: 1.55;
+      font-size: 0.9rem;
+    }
+
+    .care-panel {
+      display: none;
+      margin-top: 16px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #ffffff, #f6fbf9);
+    }
+
+    .care-panel.show {
+      display: block;
+      animation: fadeIn 300ms ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .care-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .care-head h4 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .care-head p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.9rem;
+    }
+
+    .care-status {
+      padding: 7px 10px;
+      border-radius: 999px;
+      color: var(--teal-dark);
+      background: var(--surface-soft);
+      font-size: 0.72rem;
+      font-weight: 950;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .care-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .care-card {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfefd;
+    }
+
+    .care-card.urgent {
+      border-color: rgba(194, 65, 50, 0.25);
+      background: #fff5f3;
+    }
+
+    .care-card h5 {
+      margin: 0 0 10px;
+      font-size: 0.9rem;
+    }
+
+    .care-card ul {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 0.88rem;
+    }
+
+    .recovery-chart {
+      display: grid;
+      gap: 10px;
+    }
+
+    .chart-row {
+      display: grid;
+      grid-template-columns: 92px 1fr 42px;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .chart-track {
+      height: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e8f0ee;
+    }
+
+    .chart-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--teal), var(--blue));
+      transition: width 750ms ease;
+    }
+
+    .chart-note {
+      margin: 12px 0 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.88rem;
+    }
+
+    .source-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .source-list a {
+      color: var(--teal-dark);
+      font-weight: 850;
+    }
+
+    footer {
+      padding: 26px 0 38px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    @media (max-width: 980px) {
+      .nav,
+      .section-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .nav-links {
+        justify-content: flex-start;
+      }
+
+      .hero,
+      .analyzer-grid,
+      .pneumonia-overview,
+      .care-map-grid,
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics,
+      .hero-stats,
+      .visual-card-row,
+      .grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 660px) {
+      .page {
+        width: min(100% - 20px, 660px);
+      }
+
+      .hero-panel,
+      .safety-panel,
+      .card,
+      .analyzer,
+      .result-panel {
+        padding: 18px;
+      }
+
+      .metrics,
+      .grid-3,
+      .model-meta,
+      .result-grid,
+      .controls,
+      .hero-stats,
+      .visual-card-row,
+      .care-grid,
+      .process-flow,
+      .chart-row {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-panel {
+        min-height: auto;
+        padding: 24px;
+      }
+
+      .hero-visual {
+        padding: 14px;
+      }
+
+      .scan-card {
+        min-height: 260px;
+      }
+
+      .hero h2 {
+        font-size: 2.15rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <nav class="nav" aria-label="Main navigation">
+      <a class="brand" href="#home" aria-label="PneumoScan home">
+        <div class="brand-mark">PX</div>
+        <div>
+          <h1>PneumoScan Research</h1>
+          <p>Local chest X-ray model</p>
+        </div>
+      </a>
+      <div class="nav-links">
+        <a href="#dashboard">Dashboard</a>
+        <a href="#pneumonia">Pneumonia</a>
+        <a href="#care-map">Care map</a>
+        <a href="#causes">Causes</a>
+        <a href="#prevention">Prevention</a>
+        <a class="sign-in-link" href="/app" data-open-app>Sign in</a>
+      </div>
+    </nav>
+
+    <section class="hero" id="home">
+      <div class="hero-panel">
+        <div class="eyebrow">Private local research workspace</div>
+        <h2>Professional chest X-ray review with a <span>clean local model flow.</span></h2>
+        <p class="hero-copy">
+          PneumoScan keeps training files, model scoring, and patient review on your computer.
+          The public page explains the project, while doctor/admin review stays inside the
+          signed-in dashboard.
+        </p>
+        <div class="hero-actions">
+          <a class="primary-btn" href="/app" data-open-app>Sign in to dashboard</a>
+          <a class="ghost-btn" href="#care-map">Open care map</a>
+        </div>
+        <div class="hero-stats" aria-label="Project highlights">
+          <div class="hero-stat"><strong>Local</strong><span>No cloud API for model scoring</span></div>
+          <div class="hero-stat"><strong>17k+</strong><span>Ready for larger trained datasets</span></div>
+          <div class="hero-stat"><strong>Admin</strong><span>Patient scanning is doctor-side only</span></div>
+        </div>
+      </div>
+
+      <aside class="hero-visual" aria-label="Animated local X-ray review preview">
+        <div class="scan-card">
+          <div class="scan-top">
+            <span>Local scan preview</span>
+            <span class="scan-pill">Model ready</span>
+          </div>
+          <div class="lung-stage">
+            <div class="scanner-ring"></div>
+            <div class="lung-shape"></div>
+            <div class="scan-line"></div>
+          </div>
+        </div>
+        <div class="visual-card-row">
+          <div class="visual-mini-card"><strong>Image</strong><span>Chest X-ray preview before scoring</span></div>
+          <div class="visual-mini-card"><strong>Signal</strong><span>Pneumonia-like pattern probability</span></div>
+          <div class="visual-mini-card"><strong>Review</strong><span>Checklist for admin/doctor use</span></div>
+        </div>
+        <p class="hero-safety-note">
+          Safety note: this project is for education and research. It does not diagnose pneumonia
+          and should be reviewed with qualified clinicians.
+        </p>
+      </aside>
+    </section>
+
+    <section class="section" id="dashboard">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Research dashboard</div>
+          <h2>Why pneumonia matters</h2>
+        </div>
+        <p>
+          Pneumonia remains one of the worldâ€™s major infectious killers, especially for
+          young children, older adults, and people with weakened immune systems.
+        </p>
+      </div>
+
+      <div class="metrics">
+        <div class="metric-card">
+          <strong>740k</strong>
+          <span>WHO reported 740,180 deaths in children under 5 in 2019.</span>
+        </div>
+        <div class="metric-card">
+          <strong>#1</strong>
+          <span>Pneumonia is described by WHO as the largest infectious cause of death in children worldwide.</span>
+        </div>
+        <div class="metric-card">
+          <strong>14%</strong>
+          <span>WHO says pneumonia accounted for 14% of under-5 deaths in 2019.</span>
+        </div>
+        <div class="metric-card">
+          <strong>3</strong>
+          <span>Main pathogen groups: bacteria, viruses, and fungi.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pneumonia">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Pneumonia basics</div>
+          <h2>What is pneumonia?</h2>
+        </div>
+        <p>
+          Pneumonia is a lung infection that can make breathing harder because the tiny air sacs
+          in the lungs may fill with fluid, mucus, or pus.
+        </p>
+      </div>
+
+      <div class="pneumonia-overview">
+        <div class="overview-panel">
+          <span class="overview-badge">Simple explanation</span>
+          <h3>It affects the air sacs where oxygen enters the blood.</h3>
+          <p>
+            When pneumonia develops, parts of the lung can become inflamed. This can make oxygen
+            exchange less efficient, which is why people may feel short of breath, tired, feverish,
+            or have a cough. The cause can be bacterial, viral, fungal, or related to aspiration.
+          </p>
+          <ul class="overview-points">
+            <li><span class="check">1</span><span><strong>Common signs:</strong> cough, fever, chills, chest discomfort, fast breathing, and fatigue.</span></li>
+            <li><span class="check">2</span><span><strong>Higher risk:</strong> young children, older adults, smokers, and people with weak immunity or chronic illness.</span></li>
+            <li><span class="check">3</span><span><strong>Medical review matters:</strong> symptoms, oxygen level, exam findings, labs, and X-rays are reviewed together.</span></li>
+          </ul>
+        </div>
+
+        <div class="overview-panel urgent-panel">
+          <span class="overview-badge">Safety first</span>
+          <h3>When should someone seek urgent care?</h3>
+          <p>
+            A website or AI model cannot diagnose pneumonia. If symptoms are serious or getting
+            worse, a clinician should review the patient quickly.
+          </p>
+          <ul class="overview-points">
+            <li><span class="check">!</span><span><strong>Urgent symptoms:</strong> trouble breathing, blue lips, confusion, severe chest pain, or very low energy.</span></li>
+            <li><span class="check">!</span><span><strong>Watch closely:</strong> high fever, dehydration, worsening cough, or oxygen levels lower than normal.</span></li>
+            <li><span class="check">!</span><span><strong>For this project:</strong> X-ray AI is support only; final decisions should stay with qualified medical staff.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="care-map">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Care access</div>
+          <h2>Find help fast, then learn the scan flow.</h2>
+        </div>
+        <p>
+          The public site stays focused on safety, learning, and getting to care. The actual
+          X-ray scan tools are inside the signed-in admin/doctor dashboard.
+        </p>
+      </div>
+
+      <div class="care-map-grid">
+        <div class="globe-card">
+          <div class="globe-copy">
+            <h3>Nearest hospital finder</h3>
+            <p>
+              Interact with the real Earth model or use the Nearby hospitals button to open nearby hospitals in Maps. Your browser may ask
+              for location permission; if you skip it, Maps opens a normal nearest-hospital search.
+            </p>
+          </div>
+          <div class="earth-stage" id="careGlobe" aria-label="Interactive 3D Earth hospital finder">
+            <canvas class="earth-viewer" id="earthViewer" aria-label="Downloaded 3D Earth model"></canvas>
+            <div class="earth-status" id="earthStatus">Loading your downloaded Earth model...</div>
+            <div class="earth-hud">
+              <button class="earth-nearby-btn" id="earthNearbyBtn" type="button">Nearby hospitals</button>
+            </div>
+          </div>
+          <div class="hospital-status" id="hospitalStatus">Ready to open Maps when you need care directions.</div>
+        </div>
+
+        <div class="learning-grid">
+          <div class="card video-card">
+            <div class="video-shell">
+              <video class="local-video" id="pneumoniaVideo" controls preload="metadata" poster="media/pneumonia_poster.jpg">
+                <source src="media/pneumonia_explainer.mp4" type="video/mp4" />
+                Your browser cannot play this local MP4 video.
+              </video>
+              <button class="video-poster-card" id="videoPoster" type="button" aria-label="Play local pneumonia explainer video">
+                <span class="video-poster-inner">
+                  <span class="play-badge" aria-hidden="true"></span>
+                  <span>
+                    <span class="video-poster-title">Offline pneumonia explainer</span>
+                    <span class="video-poster-subtitle">Put your MP4 in website/media/pneumonia_explainer.mp4</span>
+                  </span>
+                </span>
+              </button>
+            </div>
+            <div>
+              <h3>Pneumonia explainer</h3>
+              <p>
+                This player works inside your site and can work offline when the MP4 file is saved
+                locally in the website media folder.
+              </p>
+              <p class="video-local-note" id="videoMessage">
+                Offline video path: website/media/pneumonia_explainer.mp4
+              </p>
+            </div>
+          </div>
+
+          <div class="card video-card process-card">
+            <h3>Chest X-ray review flow</h3>
+            <p>
+              In this project, images are not scanned from the public page. A signed-in admin or
+              doctor chooses the patient, uploads the X-ray, reviews the model signal, then shares
+              only the appropriate message or appointment with the user.
+            </p>
+            <div class="process-flow" aria-label="X-ray review process">
+              <div class="process-step"><strong>1. Patient</strong><span>Choose the correct signed-in user.</span></div>
+              <div class="process-step"><strong>2. X-ray</strong><span>Upload image inside the admin scan page.</span></div>
+              <div class="process-step"><strong>3. Review</strong><span>Use the score with clinical context.</span></div>
+              <div class="process-step"><strong>4. Mail</strong><span>Send notes or appointments privately.</span></div>
+            </div>
+            <a class="ghost-btn" href="https://www.radiologyinfo.org/en/info/chestrad" target="_blank" rel="noreferrer">Learn what a chest X-ray involves</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="causes">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Causes and risk</div>
+          <h2>What can cause pneumonia?</h2>
+        </div>
+        <p>Pneumonia is an infection of the lungs. The air sacs can fill with fluid or pus, making breathing harder.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>Bacteria</h3>
+          <p>Common bacterial causes include pneumococcus. Bacterial pneumonia may require antibiotics, chosen by a clinician.</p>
+        </div>
+        <div class="card">
+          <h3>Viruses</h3>
+          <p>Respiratory viruses can cause pneumonia, including RSV and influenza. Viral cases need different care than bacterial cases.</p>
+        </div>
+        <div class="card">
+          <h3>Fungi and risk factors</h3>
+          <p>Fungal pneumonia is more likely in people with weakened immune systems. Risk rises with age, lung disease, malnutrition, smoking, and chronic illness.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="prevention">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Prevention</div>
+          <h2>How pneumonia risk can be reduced</h2>
+        </div>
+        <p>Prevention is not one thing. It combines vaccines, nutrition, clean air, hygiene, and early access to care.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>Protective steps</h3>
+          <ul class="bullet-list">
+            <li><span class="bullet-dot"></span><span>Vaccination, including pneumococcal, Hib, influenza, and other recommended vaccines.</span></li>
+            <li><span class="bullet-dot"></span><span>Good nutrition, breastfeeding support for infants, and treatment of malnutrition.</span></li>
+            <li><span class="bullet-dot"></span><span>Hand hygiene, cleaner household air, and avoiding tobacco smoke exposure.</span></li>
+            <li><span class="bullet-dot"></span><span>Early care-seeking for fast breathing, chest indrawing, fever, low oxygen, or severe cough.</span></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Why imaging helps</h3>
+          <p>
+            Chest X-rays can help clinicians assess lung opacity patterns, but they are only one
+            part of the diagnosis. Local model projects should support learning, triage research, or
+            workflow experiments, not replace clinicians.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="sources">
+      <div class="section-head">
+        <div>
+          <div class="eyebrow">Sources</div>
+          <h2>Research links</h2>
+        </div>
+      </div>
+      <div class="card">
+        <ul class="source-list">
+          <li><a href="https://www.who.int/news-room/fact-sheets/detail/pneumonia" target="_blank" rel="noreferrer">WHO - Pneumonia in children fact sheet</a></li>
+          <li><a href="https://www.cdc.gov/pneumonia/" target="_blank" rel="noreferrer">CDC - Pneumonia overview</a></li>
+          <li><a href="https://www.nhlbi.nih.gov/health/pneumonia/causes" target="_blank" rel="noreferrer">NIH NHLBI - Pneumonia causes and risk factors</a></li>
+          <li><a href="https://www.nhlbi.nih.gov/health/pneumonia/prevention" target="_blank" rel="noreferrer">NIH NHLBI - Pneumonia prevention</a></li>
+          <li><a href="https://www.rsna.org/education/ai-resources-and-training/%20%5C%20ai-image-challenge/RSNA-Pneumonia-Detection-Challenge-2018" target="_blank" rel="noreferrer">RSNA - Pneumonia Detection Challenge</a></li>
+          <li><a href="https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia" target="_blank" rel="noreferrer">Kaggle - Chest X-Ray Pneumonia dataset mirror</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <footer>
+      PneumoScan Research is a learning project. It cannot diagnose pneumonia, decide treatment,
+      or replace medical review. For medical concerns, seek qualified healthcare care.
+    </footer>
+  </main>
+
+  <script>
+    wirePublicHomepage();
+    startEarth();
+    wireOfflineVideo();
+
+    function wirePublicHomepage() {
+      document.querySelectorAll("[data-open-app]").forEach((link) => {
+        link.addEventListener("click", (event) => {
+          if (window.location.protocol === "file:") {
+            event.preventDefault();
+            window.location.href = "http://127.0.0.1:8000/app";
+          }
+        });
+      });
+
+      const globe = document.getElementById("careGlobe");
+      const hospitalButton = document.getElementById("earthNearbyBtn");
+      const hospitalStatus = document.getElementById("hospitalStatus");
+
+      const spinGlobe = () => {
+        if (!globe) return;
+        globe.classList.remove("is-spinning");
+        void globe.offsetWidth;
+        globe.classList.add("is-spinning");
+        window.dispatchEvent(new CustomEvent("spin-earth"));
+        window.setTimeout(() => globe.classList.remove("is-spinning"), 1200);
+      };
+
+      const openMaps = (url, message) => {
+        window.open(url, "_blank", "noopener,noreferrer");
+        if (hospitalStatus) hospitalStatus.textContent = message;
+      };
+
+      const findHospital = () => {
+        if (globe?.dataset.dragged === "true") return;
+        spinGlobe();
+        if (!hospitalStatus) return;
+        hospitalStatus.textContent = "Checking your browser location permission...";
+
+        if (!navigator.geolocation) {
+          openMaps("https://www.google.com/maps/search/nearest+hospital", "Opened a nearest-hospital search in Maps.");
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            openMaps(
+              `https://www.google.com/maps/search/hospital/@${latitude},${longitude},14z`,
+              "Opened nearby hospitals around your current location."
+            );
+          },
+          () => {
+            openMaps("https://www.google.com/maps/search/nearest+hospital", "Location was skipped, so Maps opened a general nearest-hospital search.");
+          },
+          { enableHighAccuracy: true, timeout: 7000, maximumAge: 300000 }
+        );
+      };
+
+      if (hospitalButton) {
+        hospitalButton.addEventListener("click", (event) => {
+          event.stopPropagation();
+          findHospital();
+        });
+      }
+    }
+
+    function wireOfflineVideo() {
+      const video = document.getElementById("pneumoniaVideo");
+      const poster = document.getElementById("videoPoster");
+      const message = document.getElementById("videoMessage");
+      if (!video || !poster) return;
+
+      const showMissing = () => {
+        if (message) {
+          message.textContent = "Add your offline MP4 here: website/media/pneumonia_explainer.mp4";
+        }
+      };
+
+      poster.addEventListener("click", async () => {
+        try {
+          await video.play();
+          poster.classList.add("hidden");
+        } catch (_) {
+          showMissing();
+        }
+      });
+
+      video.addEventListener("play", () => poster.classList.add("hidden"));
+      video.addEventListener("error", showMissing);
+    }
+
+    function startEarth() {
+      const stage = document.getElementById("careGlobe");
+      const canvas = document.getElementById("earthViewer");
+      const status = document.getElementById("earthStatus");
+      if (!stage) return;
+      if (!canvas) return;
+
+      const gl = canvas.getContext("webgl", { antialias: true, alpha: true }) ||
+        canvas.getContext("experimental-webgl", { antialias: true, alpha: true });
+      if (!gl) {
+        if (status) status.textContent = "Your browser could not start WebGL for the Earth model.";
+        stage.classList.add("model-error");
+        return;
+      }
+
+      const modelSource = window.location.protocol.startsWith("http")
+        ? "/static/models/earth.glb"
+        : "models/earth.glb";
+
+      const state = {
+        yaw: -0.7,
+        pitch: -0.18,
+        dragging: false,
+        lastX: 0,
+        lastY: 0,
+        dragged: false,
+        boostUntil: 0
+      };
+
+      const setStatus = (message) => {
+        if (status) status.textContent = message;
+      };
+
+      const fail = (message, error) => {
+        setStatus(message);
+        stage.classList.add("model-error");
+        if (error) console.error(error);
+      };
+
+      const createShader = (type, source) => {
+        const shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          throw new Error(gl.getShaderInfoLog(shader) || "Shader compile failed.");
+        }
+        return shader;
+      };
+
+      const createProgram = () => {
+        const vertex = createShader(gl.VERTEX_SHADER, `
+          attribute vec3 aPosition;
+          attribute vec3 aNormal;
+          attribute vec2 aUv;
+          uniform mat4 uMvp;
+          uniform mat4 uModel;
+          varying vec3 vNormal;
+          varying vec2 vUv;
+
+          void main() {
+            vNormal = mat3(uModel) * aNormal;
+            vUv = aUv;
+            gl_Position = uMvp * vec4(aPosition, 1.0);
+          }
+        `);
+        const fragment = createShader(gl.FRAGMENT_SHADER, `
+          precision mediump float;
+          varying vec3 vNormal;
+          varying vec2 vUv;
+          uniform sampler2D uTexture;
+          uniform vec3 uLightDir;
+
+          void main() {
+            vec3 normal = normalize(vNormal);
+            vec3 base = texture2D(uTexture, vUv).rgb;
+            float diffuse = max(dot(normal, normalize(uLightDir)), 0.0);
+            float rim = pow(1.0 - max(dot(normal, vec3(0.0, 0.0, 1.0)), 0.0), 2.0);
+            vec3 color = base * (0.34 + diffuse * 0.86) + vec3(0.22, 0.95, 1.0) * rim * 0.16;
+            gl_FragColor = vec4(color, 1.0);
+          }
+        `);
+        const program = gl.createProgram();
+        gl.attachShader(program, vertex);
+        gl.attachShader(program, fragment);
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          throw new Error(gl.getProgramInfoLog(program) || "Program link failed.");
+        }
+        return program;
+      };
+
+      const componentMap = {
+        5120: { ArrayType: Int8Array, bytes: 1 },
+        5121: { ArrayType: Uint8Array, bytes: 1 },
+        5122: { ArrayType: Int16Array, bytes: 2 },
+        5123: { ArrayType: Uint16Array, bytes: 2 },
+        5125: { ArrayType: Uint32Array, bytes: 4 },
+        5126: { ArrayType: Float32Array, bytes: 4 }
+      };
+
+      const typeComponents = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
+
+      const readAccessor = (gltf, binary, index) => {
+        const accessor = gltf.accessors[index];
+        const view = gltf.bufferViews[accessor.bufferView];
+        const info = componentMap[accessor.componentType];
+        const components = typeComponents[accessor.type];
+        if (!accessor || !view || !info || !components) {
+          throw new Error("Unsupported GLB accessor.");
+        }
+        const byteOffset = (view.byteOffset || 0) + (accessor.byteOffset || 0);
+        const total = accessor.count * components;
+
+        if (!view.byteStride || view.byteStride === info.bytes * components) {
+          return {
+            data: new info.ArrayType(binary.buffer, binary.byteOffset + byteOffset, total),
+            accessor,
+            components
+          };
+        }
+
+        const output = new info.ArrayType(total);
+        const dataView = new DataView(binary.buffer, binary.byteOffset + byteOffset, accessor.count * view.byteStride);
+        const readers = {
+          5120: "getInt8",
+          5121: "getUint8",
+          5122: "getInt16",
+          5123: "getUint16",
+          5125: "getUint32",
+          5126: "getFloat32"
+        };
+        const reader = readers[accessor.componentType];
+        for (let row = 0; row < accessor.count; row += 1) {
+          for (let col = 0; col < components; col += 1) {
+            output[row * components + col] = dataView[reader](row * view.byteStride + col * info.bytes, true);
+          }
+        }
+        return { data: output, accessor, components };
+      };
+
+      const parseGlb = (arrayBuffer) => {
+        const view = new DataView(arrayBuffer);
+        if (view.getUint32(0, true) !== 0x46546c67) throw new Error("Not a GLB file.");
+        let offset = 12;
+        let json = null;
+        let binary = null;
+        while (offset < arrayBuffer.byteLength) {
+          const length = view.getUint32(offset, true);
+          const type = view.getUint32(offset + 4, true);
+          offset += 8;
+          const chunk = new Uint8Array(arrayBuffer, offset, length);
+          if (type === 0x4e4f534a) json = JSON.parse(new TextDecoder().decode(chunk));
+          if (type === 0x004e4942) binary = chunk;
+          offset += length;
+        }
+        if (!json || !binary) throw new Error("GLB is missing JSON or binary chunk.");
+        return { json, binary };
+      };
+
+      const embeddedGlbArrayBuffer = () => {
+        const holder = document.getElementById("earthGlbBase64");
+        const encoded = holder?.textContent?.trim();
+        if (!encoded) return null;
+        const raw = atob(encoded);
+        const bytes = new Uint8Array(raw.length);
+        for (let index = 0; index < raw.length; index += 1) {
+          bytes[index] = raw.charCodeAt(index);
+        }
+        return bytes.buffer;
+      };
+
+      const loadGlbArrayBuffer = async () => {
+        const embedded = embeddedGlbArrayBuffer();
+        if (embedded) return embedded;
+        const response = await fetch(modelSource, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Could not fetch ${modelSource}`);
+        return response.arrayBuffer();
+      };
+
+      const loadImageFromBufferView = (gltf, binary, imageIndex) => {
+        const image = gltf.images[imageIndex];
+        const view = gltf.bufferViews[image.bufferView];
+        const bytes = binary.slice(view.byteOffset || 0, (view.byteOffset || 0) + view.byteLength);
+        const blob = new Blob([bytes], { type: image.mimeType || "image/png" });
+        const url = URL.createObjectURL(blob);
+        return new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => {
+            URL.revokeObjectURL(url);
+            resolve(img);
+          };
+          img.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error("Could not read embedded Earth texture."));
+          };
+          img.src = url;
+        });
+      };
+
+      const normalizePositions = (positions, accessor) => {
+        const min = accessor.min || [-1, -1, -1];
+        const max = accessor.max || [1, 1, 1];
+        const center = [
+          (min[0] + max[0]) / 2,
+          (min[1] + max[1]) / 2,
+          (min[2] + max[2]) / 2
+        ];
+        const scale = 1 / Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]);
+        const normalized = new Float32Array(positions.length);
+        for (let i = 0; i < positions.length; i += 3) {
+          normalized[i] = (positions[i] - center[0]) * scale * 2.2;
+          normalized[i + 1] = (positions[i + 1] - center[1]) * scale * 2.2;
+          normalized[i + 2] = (positions[i + 2] - center[2]) * scale * 2.2;
+        }
+        return normalized;
+      };
+
+      const createBuffer = (target, data) => {
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(target, buffer);
+        gl.bufferData(target, data, gl.STATIC_DRAW);
+        return buffer;
+      };
+
+      const createTexture = (image) => {
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        return texture;
+      };
+
+      const mat4Multiply = (a, b) => {
+        const out = new Float32Array(16);
+        for (let column = 0; column < 4; column += 1) {
+          for (let row = 0; row < 4; row += 1) {
+            out[column * 4 + row] =
+              a[0 * 4 + row] * b[column * 4 + 0] +
+              a[1 * 4 + row] * b[column * 4 + 1] +
+              a[2 * 4 + row] * b[column * 4 + 2] +
+              a[3 * 4 + row] * b[column * 4 + 3];
+          }
+        }
+        return out;
+      };
+
+      const perspective = (fov, aspect, near, far) => {
+        const f = 1 / Math.tan(fov / 2);
+        const nf = 1 / (near - far);
+        return new Float32Array([
+          f / aspect, 0, 0, 0,
+          0, f, 0, 0,
+          0, 0, (far + near) * nf, -1,
+          0, 0, 2 * far * near * nf, 0
+        ]);
+      };
+
+      const normalize = (v) => {
+        const length = Math.hypot(v[0], v[1], v[2]) || 1;
+        return [v[0] / length, v[1] / length, v[2] / length];
+      };
+
+      const cross = (a, b) => [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0]
+      ];
+
+      const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+
+      const lookAt = (eye, target, up) => {
+        const z = normalize([eye[0] - target[0], eye[1] - target[1], eye[2] - target[2]]);
+        const x = normalize(cross(up, z));
+        const y = cross(z, x);
+        return new Float32Array([
+          x[0], y[0], z[0], 0,
+          x[1], y[1], z[1], 0,
+          x[2], y[2], z[2], 0,
+          -dot(x, eye), -dot(y, eye), -dot(z, eye), 1
+        ]);
+      };
+
+      const rotationX = (angle) => {
+        const c = Math.cos(angle);
+        const s = Math.sin(angle);
+        return new Float32Array([
+          1, 0, 0, 0,
+          0, c, s, 0,
+          0, -s, c, 0,
+          0, 0, 0, 1
+        ]);
+      };
+
+      const rotationY = (angle) => {
+        const c = Math.cos(angle);
+        const s = Math.sin(angle);
+        return new Float32Array([
+          c, 0, -s, 0,
+          0, 1, 0, 0,
+          s, 0, c, 0,
+          0, 0, 0, 1
+        ]);
+      };
+
+      const resize = () => {
+        const rect = canvas.getBoundingClientRect();
+        const ratio = Math.min(2, window.devicePixelRatio || 1);
+        const width = Math.max(1, Math.floor(rect.width * ratio));
+        const height = Math.max(1, Math.floor(rect.height * ratio));
+        if (canvas.width !== width || canvas.height !== height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      };
+
+      const wireDrag = () => {
+        stage.addEventListener("pointerdown", (event) => {
+          if (event.target.closest("button")) return;
+          state.dragging = true;
+          state.dragged = false;
+          state.lastX = event.clientX;
+          state.lastY = event.clientY;
+          stage.dataset.dragged = "false";
+          stage.setPointerCapture?.(event.pointerId);
+        });
+
+        stage.addEventListener("pointermove", (event) => {
+          if (!state.dragging) return;
+          const dx = event.clientX - state.lastX;
+          const dy = event.clientY - state.lastY;
+          if (Math.abs(dx) + Math.abs(dy) > 4) {
+            state.dragged = true;
+            stage.dataset.dragged = "true";
+          }
+          state.yaw += dx * 0.008;
+          state.pitch = Math.max(-0.9, Math.min(0.9, state.pitch + dy * 0.006));
+          state.lastX = event.clientX;
+          state.lastY = event.clientY;
+        });
+
+        stage.addEventListener("pointerup", (event) => {
+          state.dragging = false;
+          stage.releasePointerCapture?.(event.pointerId);
+          window.setTimeout(() => {
+            stage.dataset.dragged = "false";
+          }, 120);
+        });
+      };
+
+      window.addEventListener("spin-earth", () => {
+        state.boostUntil = performance.now() + 1400;
+      });
+
+      const load = async () => {
+        try {
+          setStatus("Loading your downloaded Earth model...");
+          const { json, binary } = parseGlb(await loadGlbArrayBuffer());
+          const primitive = json.meshes[0].primitives[0];
+          const position = readAccessor(json, binary, primitive.attributes.POSITION);
+          const normal = readAccessor(json, binary, primitive.attributes.NORMAL);
+          const uv = readAccessor(json, binary, primitive.attributes.TEXCOORD_0);
+          const indices = readAccessor(json, binary, primitive.indices);
+          const material = json.materials[primitive.material || 0];
+          const textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+          const imageIndex = json.textures[textureIndex].source;
+          const image = await loadImageFromBufferView(json, binary, imageIndex);
+
+          const program = createProgram();
+          gl.useProgram(program);
+
+          const positionBuffer = createBuffer(gl.ARRAY_BUFFER, normalizePositions(position.data, position.accessor));
+          const normalBuffer = createBuffer(gl.ARRAY_BUFFER, normal.data);
+          const uvBuffer = createBuffer(gl.ARRAY_BUFFER, uv.data);
+          const indexBuffer = createBuffer(gl.ELEMENT_ARRAY_BUFFER, indices.data);
+          const texture = createTexture(image);
+          const indexType = indices.data instanceof Uint32Array ? gl.UNSIGNED_INT : gl.UNSIGNED_SHORT;
+
+          if (indexType === gl.UNSIGNED_INT && !gl.getExtension("OES_element_index_uint")) {
+            throw new Error("This browser cannot draw the Earth model indices.");
+          }
+
+          const attributes = {
+            position: gl.getAttribLocation(program, "aPosition"),
+            normal: gl.getAttribLocation(program, "aNormal"),
+            uv: gl.getAttribLocation(program, "aUv")
+          };
+          const uniforms = {
+            mvp: gl.getUniformLocation(program, "uMvp"),
+            model: gl.getUniformLocation(program, "uModel"),
+            texture: gl.getUniformLocation(program, "uTexture"),
+            light: gl.getUniformLocation(program, "uLightDir")
+          };
+
+          const bindAttribute = (location, buffer, size) => {
+            gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+            gl.enableVertexAttribArray(location);
+            gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0);
+          };
+
+          bindAttribute(attributes.position, positionBuffer, 3);
+          bindAttribute(attributes.normal, normalBuffer, 3);
+          bindAttribute(attributes.uv, uvBuffer, 2);
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, texture);
+          gl.uniform1i(uniforms.texture, 0);
+          gl.uniform3f(uniforms.light, 0.35, 0.72, 0.58);
+          gl.enable(gl.DEPTH_TEST);
+
+          stage.classList.add("model-ready");
+          wireDrag();
+
+          let lastFrame = performance.now();
+          const render = (time) => {
+            const delta = Math.min(34, time - lastFrame);
+            lastFrame = time;
+            resize();
+            if (!state.dragging) {
+              state.yaw += delta * (time < state.boostUntil ? 0.00135 : 0.00022);
+            }
+            gl.clearColor(0, 0, 0, 0);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            const aspect = canvas.width / Math.max(1, canvas.height);
+            const projection = perspective(Math.PI / 4, aspect, 0.1, 20);
+            const view = lookAt([0, 0, 3.2], [0, 0, 0], [0, 1, 0]);
+            const model = mat4Multiply(rotationY(state.yaw), rotationX(state.pitch));
+            const mvp = mat4Multiply(projection, mat4Multiply(view, model));
+            gl.uniformMatrix4fv(uniforms.model, false, model);
+            gl.uniformMatrix4fv(uniforms.mvp, false, mvp);
+            gl.drawElements(gl.TRIANGLES, indices.data.length, indexType, 0);
+            requestAnimationFrame(render);
+          };
+          requestAnimationFrame(render);
+        } catch (error) {
+          fail("Could not load the downloaded Earth model. Check that models/earth.glb is copied from your Downloads folder.", error);
+        }
+      };
+
+      load();
+    }
+  </script>
+
+</body>
+</html>

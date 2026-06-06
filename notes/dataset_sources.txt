@@ -1,0 +1,19 @@
+Recommended labeled chest X-ray dataset sources:
+
+1. Kaggle Chest X-Ray Pneumonia dataset
+   https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia
+
+   Common folders after download:
+   chest_xray/train/NORMAL
+   chest_xray/train/PNEUMONIA
+   chest_xray/test/NORMAL
+   chest_xray/test/PNEUMONIA
+
+   The training script can read nested NORMAL and PNEUMONIA folders if you point --data-dir to the parent folder.
+
+2. RSNA Pneumonia Detection Challenge
+   https://www.rsna.org/education/ai-resources-and-training/%20%5C%20ai-image-challenge/RSNA-Pneumonia-Detection-Challenge-2018
+
+   This dataset is more advanced because labels and images may need extra preparation.
+
+Always check dataset licenses and citations before using images in public projects.
